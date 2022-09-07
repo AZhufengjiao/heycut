@@ -3,7 +3,9 @@
   <div class="flicker-animation">
     <ul>
       <li>
-        <div><img src="" alt="" /></div>
+        <div>
+          <img src="" alt="" />
+        </div>
 
         <h1>1.上传</h1>
       </li>
@@ -55,8 +57,8 @@
         border: 0.01rem solid #ebeffc;
         overflow: hidden;
         img {
-          width: 100%;
-          height: 100%;
+          width: 50%;
+          height: 50%;
         }
       }
       h1 {

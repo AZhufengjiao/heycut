@@ -39,6 +39,7 @@
 
 <style lang="less" scoped>
 .slide-module {
+  margin-bottom: 0.32rem;
   width: 100%;
   .ul-top {
     width: 100%;
@@ -65,6 +66,7 @@
           height: 1.17rem;
           border-radius: 0.09rem;
           background: #045dfe;
+          overflow: hidden;
           img {
             width: 100%;
             height: 100%;

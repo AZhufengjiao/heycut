@@ -17,14 +17,13 @@
   height: 1.66rem;
   border-radius: 0.12rem;
   border: 0.03rem dashed rgba(5, 68, 255, 0.32);
-
+  // 去除button默认样式
   button {
     width: 1.85rem;
     height: 0.44rem;
     background: linear-gradient(90deg, #b77af6 0%, #5566ff 100%);
     border-radius: 0.12rem;
     border: none;
-
     font-size: 0.16rem;
     font-family: AlimamaShuHeiTi;
     color: #fff;
