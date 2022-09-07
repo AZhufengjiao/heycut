@@ -80,7 +80,7 @@
             margin-bottom: 0.16rem;
           }
           div {
-            padding-top: 0.06rem;
+            padding-top: 0.05rem;
             font-size: 0.12rem;
             color: #121212;
             line-height: 0.12rem;

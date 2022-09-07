@@ -50,6 +50,7 @@ component: {
   width: 100%;
   height: 8.97rem;
   background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
+  overflow: hidden;
   .container {
     margin: auto;
     width: 3.55rem;
@@ -100,10 +101,11 @@ component: {
                 rgba(172, 120, 247, 1),
                 rgba(17, 78, 232, 1)
               )
-              2 2;           font-size: 0.16rem;
-              font-family: AlimamaShuHeiTi;
-              color: #6068fd;
-              font-weight: 600;
+              2 2;
+            font-size: 0.16rem;
+            font-family: AlimamaShuHeiTi;
+            color: #6068fd;
+            font-weight: 600;
             button {
               width: 97%;
               height: 92%;
