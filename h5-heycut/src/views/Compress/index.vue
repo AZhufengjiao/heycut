@@ -57,7 +57,8 @@ const handleComress = (num) => {
 <style lang="less" scoped>
 .compress {
   width: 100%;
-  height: 10.01rem;
+  // height: 10.01rem;
+  padding-bottom: 0.56rem;
   background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
   .container {
     margin: auto;
@@ -70,6 +71,7 @@ const handleComress = (num) => {
       height: 1.11rem;
       border: 0.03rem dashed rgba(5, 68, 255, 0.32);
       border-radius: 0.12rem 0.12rem 0 0;
+      border-bottom: none;
       h2 {
         margin-bottom: 0.11rem;
         font-size: 0.12rem;
@@ -101,11 +103,23 @@ const handleComress = (num) => {
     }
     // 击上传虚线组件
     .click-upload {
+      background: red;
       margin-top: 0.04rem;
-      border-top: none;
+      border-top: none !important;
       height: 1.43rem;
       border-radius: 0 0 0.12rem 0.12rem;
     }
   }
 }
+// .compress {
+//   .container {
+//     .click-upload {
+//       background: red;
+//       margin-top: 0.04rem;
+//       border-top: none !important;
+//       height: 1.43rem;
+//       border-radius: 0 0 0.12rem 0.12rem;
+//     }
+//   }
+// }
 </style>

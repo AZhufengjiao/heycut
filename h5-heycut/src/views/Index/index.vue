@@ -30,7 +30,7 @@ import ClickUpload from "@/components/ClickUpload/index.vue"; // 击上传虚线
 import SlideModule from "@/components/SlideModule/index.vue"; // 滑动画面
 import MoreTools from "@/components/MoreTools/index.vue"; // 更多工具
 component: {
-  Nav, Title, FlickerAnimation, ClickUpload, SlideModule,MoreTools;
+  Nav, Title, FlickerAnimation, ClickUpload, SlideModule, MoreTools;
 }
 </script>
 
@@ -38,8 +38,9 @@ component: {
 // @import url("@/assets/css/Index/index-375px.less");
 .conversion {
   width: 100%;
-  height: 8.97rem;
-  background: linear-gradient(271deg,#e3e8f6, #e5f7f7);
+  padding-bottom: 0.56rem;
+  // height: 8.97rem;
+  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
   // 版心
   .container {
     margin: auto;
