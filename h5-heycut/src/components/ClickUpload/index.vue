@@ -22,20 +22,31 @@
           :src="vldeoUrl"
           :style="{ width: '100%', height: '1.66rem' }"
         ></video> -->
-        <vue3VideoPlay v-bind="options" :poster="vldeoUrl" />
+        <vue3VideoPlay
+          v-bind="options"
+          :poster="vldeoUrl"
+          @canplaythrough="getVideoDate"
+          @play="onPlay"
+        />
       </div>
       <!-- 拖拽 -->
       <div class="video-cut-out">
         <!-- 拖拽框 -->
         <div
           class="drag"
-          :style="{ width: dragWidth + 'px', marginLeft: dragMargin + 'px' }"
-          @touchmove="handleDownDrag"
+          :style="{
+            width: dragWidth + 'px',
+            marginLeft: dragMargin + 'px',
+            left: 0 + 'px',
+          }"
+          @touchstart="handleDragClick"
+          @touchend="handleDragEnd"
         >
           <div
             class="drag-left"
             @touchstart="handleDownLeft"
             @touchend="mouseUpLeft"
+            @click="clickLeft"
           >
             <span></span>
           </div>
@@ -43,12 +54,15 @@
             class="drag-right"
             @touchstart="handleDownRight"
             @touchend="mouseUpRight"
+            @click="clickRight"
           >
             <span></span>
           </div>
         </div>
       </div>
-      <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
+      <h1 @touchstart="handleDown">
+        拖动边框选择截取需要部分 {{ CountMargin }} {{ dragMargin }}
+      </h1>
       <button>生成GIF</button>
       <canvas style="display: none" id="myCanvas"></canvas>
 
@@ -79,6 +93,7 @@ const handleUpLoading = () => {
 
 // 用户选择视频
 const handleFileInput = (e) => {
+  console.log(e.target.files[0]);
   // 获取视频播放的格式
   vldeoUrl.value = URL.createObjectURL(e.target.files[0]);
 };
@@ -88,8 +103,56 @@ const handleFileInput = (e) => {
 let dragWidth = ref(300);
 // 移动盒子margin
 let dragMargin = ref(0);
+// 固定margin
+let CountMargin = ref(0);
+//  移动盒子left
+let dragLeft = ref(0);
+
+// 3.1 鼠标按下
+let shubX = ref(0); // 鼠标距离div的距离
+const handleDragClick = (e) => {
+  shubX.value =
+    e.changedTouches[0].clientX - (screen.width - 355) / 2 - dragMargin.value;
+  document.addEventListener("touchmove", handleDownDrag);
+};
+// 3.2 移动 移动的盒子
+const handleDownDrag = (e) => {
+  dragMargin.value =
+    e.changedTouches[0].clientX -
+    (screen.width - 355) / 2 -
+    parseInt(
+      getComputedStyle(document.querySelector(".drag")).left.slice(0, -2)
+    ) -
+    shubX.value;
+  if (dragMargin.value <= 0) {
+    document.querySelector(".drag").style.left = 0;
+    dragMargin.value = 0;
+  }
+  if (
+    parseInt(
+      getComputedStyle(document.querySelector(".drag")).width.slice(0, -2)
+    ) +
+      dragMargin.value >=
+    355
+  ) {
+    dragMargin.value =
+      355 -
+      parseInt(
+        getComputedStyle(document.querySelector(".drag")).width.slice(0, -2)
+      );
+  }
+};
+// 3.3 鼠标抬起
+const handleDragEnd = () => {
+  document.removeEventListener("touchmove", handleDownDrag);
+};
 // 1.1 右边拖拽鼠标按下
 const handleDownRight = () => {
+  // document.querySelector(".drag").style.pointerEvents = "none";
+  // document.querySelector(".drag-right").style.pointerEvents = "auto";
+  CountMargin.value = parseInt(
+    getComputedStyle(document.querySelector(".drag")).marginLeft.slice(0, -2)
+  );
   // 获取盒子的宽
   dragWidth.value = document.querySelector(".drag").offsetWidth;
   // 调用鼠标移动事件
@@ -97,9 +160,18 @@ const handleDownRight = () => {
 };
 // 1.2 右边移动事件
 let rightMove = (e) => {
+  console.log(222222222222);
+  document.querySelector(".drag").style.marginLeft = CountMargin.value;
+  document.querySelector(".drag").style.left = 10;
+  // document.querySelector(".drag").setAttribute("marginLeft", CountMargin.value);
+  // document.querySelector(".drag").setAttribute("left", CountMargin.value);
+  document.querySelector(
+    ".drag"
+  ).style.cssText = `margin-left:${CountMargin.value}px`;
+  dragMargin.value = CountMargin.value;
   // 移动的宽高
   let widthX = e.changedTouches[0].clientX;
-  // 获取最小宽度
+  // 获取最小宽度 盒子两边的margin
   let minWidth = (screen.width - 355) / 2;
   if (widthX - minWidth >= 355) {
     document.removeEventListener("touchmove", rightMove);
@@ -108,15 +180,7 @@ let rightMove = (e) => {
       dragWidth.value = 100;
       document.removeEventListener("touchmove", rightMove);
     } else {
-      dragWidth.value =
-        widthX -
-        minWidth -
-        parseInt(
-          getComputedStyle(document.querySelector(".drag")).marginLeft.slice(
-            0,
-            -2
-          )
-        );
+      dragWidth.value = widthX - minWidth - CountMargin.value;
     }
   }
 };
@@ -124,10 +188,21 @@ let rightMove = (e) => {
 const mouseUpRight = () => {
   document.removeEventListener("touchmove", rightMove);
 };
+
 // 固定盒子的宽
 let countNum = ref(null);
 // 2.1 左边拖拽鼠标按下
 const handleDownLeft = (e) => {
+  console.log(2222222222222);
+  // 获取盒子右边的距离
+  CountMargin.value =
+    355 -
+    parseInt(
+      getComputedStyle(document.querySelector(".drag")).width.slice(0, -2)
+    ) -
+    parseInt(
+      getComputedStyle(document.querySelector(".drag")).marginLeft.slice(0, -2)
+    );
   // 获取盒子的宽
   countNum.value = document.querySelector(".drag").offsetWidth;
   // 调用鼠标移动事件
@@ -135,67 +210,33 @@ const handleDownLeft = (e) => {
 };
 // 2.2 左边移动事件
 const leftMove = (e) => {
+  console.log(11111111111);
+  // 盒子的宽度
   dragWidth.value = document.querySelector(".drag").offsetWidth;
-  // console.log(e);
-  // 移动的宽高
-  let widthX = e.changedTouches[0].pageX - (screen.width - 355) / 2;
+  // 鼠标的位置
+  let widthX = e.changedTouches[0].pageX;
   // 获取最小宽度
   let minWidth = (screen.width - 355) / 2;
-
   // 如果移动的宽度小于最小宽度就让他等于最小宽度 ， 不让他超出盒子
-  if (widthX < minWidth) {
+  if (widthX <= minWidth) {
     dragWidth.value = dragWidth.value - 0;
-  } else if (widthX > minWidth) {
-    if (dragWidth.value < 100) {
+  } else {
+    if (dragWidth.value <= 100) {
       dragWidth.value = 100;
-      dragMargin.value = getComputedStyle(
-        document.querySelector(".drag")
-      ).marginLeft;
-      document.removeEventListener("touchmove", leftMove);
+      // dragMargin.value = widthX;
+      // console.log(getComputedStyle(document.querySelector(".drag")).marginLeft);
+      // document.removeEventListener("touchmove", leftMove);
     } else if (dragMargin.value === 0 && dragWidth.value === 100) {
-      document.removeEventListener("touchmove", leftMove);
+      // document.removeEventListener("touchmove", leftMove);
     } else {
       dragMargin.value = widthX - minWidth;
-      dragWidth.value =
-        dragWidth.value +
-        parseInt(
-          getComputedStyle(document.querySelector(".drag")).marginLeft.slice(
-            0,
-            -2
-          )
-        ) -
-        widthX +
-        minWidth;
+      dragWidth.value = 355 - dragMargin.value - CountMargin.value;
     }
   }
 };
 // 2.3 左边鼠标离开
 const mouseUpLeft = () => {
   document.removeEventListener("touchmove", leftMove);
-};
-// 3.1 移动 移动的盒子
-const handleDownDrag = (e) => {
-  console.log(
-    e.changedTouches[0].clientX -
-      (screen.width - 355) / 2 -
-      parseInt(
-        getComputedStyle(document.querySelector(".drag")).marginLeft.slice(
-          0,
-          -2
-        )
-      )
-  );
-  dragMargin.value =
-    e.changedTouches[0].clientX -
-    (screen.width - 355) / 2 -
-    parseInt(
-      getComputedStyle(document.querySelector(".drag")).marginLeft.slice(0, -2)
-    ) -
-    parseInt(
-      getComputedStyle(document.querySelector(".drag")).width.slice(0, -2)
-    ) /
-      2;
-  // console.log(e.changedTouches[0]);
 };
 
 // 监听video标签 是否有值
@@ -249,10 +290,21 @@ const options = reactive({
   ], //显示所有按钮,
 });
 
+// 获取视频时间
+const getVideoDate = (e) => {
+  let resizeDragDom = document.querySelector(".resize-drag");
+  console.log(resizeDragDom);
+  console.log(e.target.duration);
+};
+
+const onPlay = (ev) => {
+  console.log("播放");
+};
+
 interact(".resize-drag")
   .resizable({
     // resize from all edges and corners
-    edges: { left: true, right: true, bottom: true, top: true },
+    edges: { left: true, right: true, bottom: false, top: false },
 
     listeners: {
       move(event) {
@@ -272,10 +324,9 @@ interact(".resize-drag")
 
         target.setAttribute("data-x", x);
         target.setAttribute("data-y", y);
-        target.textContent =
-          Math.round(event.rect.width) +
-          "\u00D7" +
-          Math.round(event.rect.height);
+
+        // 改变宽高，触发事件
+        dragFn(1000);
       },
     },
     modifiers: [
@@ -293,15 +344,78 @@ interact(".resize-drag")
     inertia: true,
   })
   .draggable({
-    listeners: { move: window.dragMoveListener },
+    // enable inertial throwing
     inertia: true,
+    // keep the element within the area of it's parent
     modifiers: [
       interact.modifiers.restrictRect({
         restriction: "parent",
         endOnly: true,
       }),
     ],
+    // enable autoScroll
+    autoScroll: true,
+
+    listeners: {
+      // call this function on every dragmove event
+      move: dragMoveListener,
+
+      // 拖动事件 call this function on every dragend event
+      end(event) {
+        var textEl = event.target.querySelector("p");
+
+        textEl &&
+          (textEl.textContent =
+            "moved a distance of " +
+            Math.sqrt(
+              (Math.pow(event.pageX - event.x0, 2) +
+                Math.pow(event.pageY - event.y0, 2)) |
+                0
+            ).toFixed(2) +
+            "px");
+      },
+    },
   });
+// 节流
+let timer = null;
+// 拖动改变宽高，触发事件
+const dragFn = (date) => {
+  return (function () {
+    if (timer) {
+      return;
+    } else {
+      timer = window.setTimeout(() => {
+        console.log(111);
+        timer = null;
+        clearTimeout(timer);
+      }, date);
+    }
+  })();
+};
+
+// 视频剪辑器拖动事件
+function dragMoveListener(event) {
+  var target = event.target;
+  // keep the dragged position in the data-x/data-y attributes
+  var x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
+
+  // if (x <= 0) {
+  //   x = 0;
+  // }
+
+  // if (x >= 30) {
+  //   x = 30;
+  // }
+
+  // translate the element
+  target.style.transform = "translate(" + x + "px)";
+
+  // update the posiion attributes
+  target.setAttribute("data-x", x);
+}
+
+// this function is used later in the resizing and gesture demos
+window.dragMoveListener = dragMoveListener;
 
 // const onCanplay = (ev) => {
 //   console.log(ev, "可以播放");
@@ -368,6 +482,7 @@ interact(".resize-drag")
 
 // 视频
 .video-box {
+  overflow: hidden;
   padding-bottom: 0.46rem;
   width: 100%;
   .video-plugIn {
@@ -383,6 +498,7 @@ interact(".resize-drag")
     background: transparent;
     // 拖拽框
     .drag {
+      z-index: 1;
       position: absolute;
       top: 0;
       left: 0;
@@ -395,6 +511,7 @@ interact(".resize-drag")
       border-right: 0.15rem solid #af79f7;
     }
     .drag-left {
+      z-index: 3;
       position: absolute;
       width: 15px;
       height: 121%;
@@ -403,6 +520,7 @@ interact(".resize-drag")
       bottom: -5px;
     }
     .drag-right {
+      z-index: 3;
       width: 15px;
       height: 121%;
       position: absolute;
