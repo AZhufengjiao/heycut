@@ -1,65 +1,50 @@
 <template>
-  <div>
-    <!-- 点击上传虚线组件 -->
-    <div v-if="vldeoUrl == null" class="click-upload">
-      <button @click="handleUpLoading">+点击上传视频</button>
-      <input
-        type="file"
-        style="display: none"
-        name="uoload"
-        ref="uploadDom"
-        accept="video/*"
-        @change="handleFileInput"
+  <!-- 这个组件废弃，压缩和转换上传视频要用两个组件 -->
+  <div class="video-box">
+    <!-- 视频播放 -->
+    <div ref="v" class="video-plugIn">
+      <!-- <video
+            ref="videoDom"
+            controls
+            autoplay
+            :src="vldeoUrl"
+            :style="{ width: '100%', height: '1.66rem' }"
+          ></video> -->
+      <vue3VideoPlay
+        v-if="vldeoUrl !== null"
+        v-bind="options"
+        :poster="vldeoUrl"
+        @canplaythrough="getVideoDate"
+        @play="onPlay"
+        @timeupdate="handleseeking"
       />
     </div>
-    <div class="video-box" v-if="vldeoUrl !== null">
-      <!-- 视频播放 -->
-      <div ref="v" class="video-plugIn">
-        <!-- <video
-          ref="videoDom"
-          controls
-          autoplay
-          :src="vldeoUrl"
-          :style="{ width: '100%', height: '1.66rem' }"
-        ></video> -->
-        <vue3VideoPlay
-          v-if="vldeoUrl !== null"
-          v-bind="options"
-          :poster="vldeoUrl"
-          @canplaythrough="getVideoDate"
-          @play="onPlay"
-          @timeupdate="handleseeking"
-          @error="handleVideoError"
-          @stalled="handleVideoStalled"
-        />
-      </div>
-      <!-- 拖拽 -->
-      <!-- 拖拽 -->
-      <div class="video-cut-out">
-        <div class="resize-drag">
-          <div
-            class="drag-left"
-            @touchstart="handleDownLeft"
-            @touchend="mouseUpLeft"
-            @click="clickLeft"
-          >
-            <span></span>
-          </div>
-          <div
-            class="drag-right"
-            @touchstart="handleDownRight"
-            @touchend="mouseUpRight"
-            @click="clickRight"
-          >
-            <span></span>
-          </div>
+    <!-- 拖拽 -->
+    <!-- 拖拽 -->
+    <div class="video-cut-out">
+      <div class="resize-drag">
+        <div
+          class="drag-left"
+          @touchstart="handleDownLeft"
+          @touchend="mouseUpLeft"
+          @click="clickLeft"
+        >
+          <span></span>
+        </div>
+        <div
+          class="drag-right"
+          @touchstart="handleDownRight"
+          @touchend="mouseUpRight"
+          @click="clickRight"
+        >
+          <span></span>
         </div>
       </div>
-
-      <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
-      <button>生成GIF</button>
-      <canvas style="display: none" id="myCanvas"></canvas>
     </div>
+
+    <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
+    <button>生成GIF</button>
+    <canvas style="display: none" id="myCanvas"></canvas>
   </div>
 </template>
 
@@ -71,10 +56,21 @@ import interact from "interactjs";
 component: {
   videoPlay;
 }
-// file文件 DOM                        ----- file文件
-let uploadDom = ref(null);
+const props = defineProps({
+  vldeourl: String,
+});
 // 视频url
-let vldeoUrl = ref(null);
+let vldeoUrl = ref(props.vldeourl);
+watch(
+  () => props.vldeourl,
+  (newValue) => {
+    if (newValue !== null) {
+      vldeoUrl.value = newValue;
+    }
+  },
+  { immediate: true }
+);
+
 // 视频video DOM
 let videoDom = ref(null);
 
@@ -89,11 +85,6 @@ let startTime = ref(0);
 let dragX = ref(null);
 // 定时器  //用来赋值requestAnimationFrame的id，为之后取消它做准备
 var animationId = ref(null);
-
-// 点击上传视频
-const handleUpLoading = () => {
-  uploadDom.value.click();
-};
 
 // 用户选择视频
 const handleFileInput = (e) => {
@@ -156,7 +147,7 @@ const onPlay = (e) => {
   // console.log(endTime.value, "播放");
 };
 
-// 1.3 视频时长更新
+// 视频时长更新
 const handleseeking = (e) => {
   // 重新赋值结束时间
   endTime.value =
@@ -169,24 +160,12 @@ const handleseeking = (e) => {
       (videoTime.value / 325) * dragX.value;
   }
 };
-const handleVideoStalled = (e) => {
-  console.log(e);
-  if (e) {
-    alert("视频出错啦");
-  }
-};
-// 1.4 视频播放错误
-const handleVideoError = (e) => {
-  if (e) {
-    alert("视频出错啦");
-  }
-};
 
-// onUnmounted(() => {
-//   // 清除定时器
-//   cancelAnimationFrame(animationId.value);
-//   animationId.value = null;
-// });
+onUnmounted(() => {
+  // 清除定时器
+  cancelAnimationFrame(animationId.value);
+  animationId.value = null;
+});
 
 // 2.1 视频剪辑插件
 interact(".resize-drag")
@@ -196,13 +175,6 @@ interact(".resize-drag")
 
     listeners: {
       move(event) {
-        let sanshi = 30 * (325 / videoTime.value);
-        let boxWidth = document.querySelector(".resize-drag").clientWidth;
-        // 加个判断不能大于30s视频
-        if (boxWidth > sanshi) {
-          return;
-        }
-
         var target = event.target;
         var x = parseFloat(target.getAttribute("data-x")) || 0;
         var y = parseFloat(target.getAttribute("data-y")) || 0;
@@ -220,8 +192,6 @@ interact(".resize-drag")
         target.setAttribute("data-x", x);
         target.setAttribute("data-y", y);
         dragX.value = x;
-
-        console.log(sanshi, videoTime.value);
         // 改变宽高，触发事件
         dragFn(1000);
       },
@@ -332,6 +302,15 @@ function dragMoveListener(event) {
   endTime.value =
     (videoTime.value / 325) *
     (document.querySelector(".resize-drag").clientWidth + dragX.value);
+
+  // console.log(
+  //   "endTime=",
+  //   endTime.value,
+  //   "video=",
+  //   videoTime.value,
+  //   "startTime=",
+  //   startTime.value
+  // );
 }
 // this function is used later in the resizing and gesture demos
 window.dragMoveListener = dragMoveListener;
