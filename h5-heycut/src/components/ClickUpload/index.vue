@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 点击上传虚线组件 -->
-    <div v-if="vldeoUrl == null" class="click-upload">
+    <div v-if="videoUrl == null" class="click-upload">
       <button @click="handleUpLoading">+点击上传视频</button>
       <input
         type="file"
@@ -12,25 +12,26 @@
         @change="handleFileInput"
       />
     </div>
-    <div class="video-box" v-if="vldeoUrl !== null">
+    <div class="video-box" v-if="videoUrl !== null">
       <!-- 视频播放 -->
       <div ref="v" class="video-plugIn">
         <!-- <video
           ref="videoDom"
           controls
           autoplay
-          :src="vldeoUrl"
+          :src="videoUrl"
           :style="{ width: '100%', height: '1.66rem' }"
         ></video> -->
         <vue3VideoPlay
-          v-if="vldeoUrl !== null"
+          v-if="videoUrl !== null"
           v-bind="options"
-          :poster="vldeoUrl"
+          :poster="videoUrl"
           @canplaythrough="getVideoDate"
           @play="onPlay"
           @timeupdate="handleseeking"
           @error="handleVideoError"
           @stalled="handleVideoStalled"
+          @canplay="onCanplay"
         />
       </div>
       <!-- 拖拽 -->
@@ -57,7 +58,7 @@
       </div>
 
       <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
-      <button>生成GIF</button>
+      <button @click="handleCreateBtn">生成GIF</button>
       <canvas style="display: none" id="myCanvas"></canvas>
     </div>
   </div>
@@ -68,18 +69,26 @@ import { ref, reactive, watch, onUnmounted } from "vue";
 // 视频插件
 import { videoPlay } from "vue3-video-play";
 import interact from "interactjs";
+import GIF from "../../../static/gif.js";
+import { getGifWorker } from "../../../static/gif.worker.js";
 component: {
   videoPlay;
 }
 // file文件 DOM                        ----- file文件
 let uploadDom = ref(null);
 // 视频url
-let vldeoUrl = ref(null);
+let videoUrl = ref(null);
 // 视频video DOM
 let videoDom = ref(null);
 
 // video时长                           ----- video变量
 let videoTime = ref(null);
+// 视频剪辑flag
+let videoGifFlag = ref(false);
+// 视频定时器
+let setGifTimer = ref(null);
+// 视频每一帧数组
+let videoFrameList = ref([]);
 
 // 视频截至时间                     ----- 视频剪辑插件
 let endTime = ref(null);
@@ -98,7 +107,7 @@ const handleUpLoading = () => {
 // 用户选择视频
 const handleFileInput = (e) => {
   // 获取视频播放的格式
-  vldeoUrl.value = URL.createObjectURL(e.target.files[0]);
+  videoUrl.value = URL.createObjectURL(e.target.files[0]);
 };
 
 // 1.1vodeo插件 视频参数
@@ -107,7 +116,7 @@ const options = reactive({
   height: "100%", //播放器高度
   color: "#409eff", //主题色
   title: "", //视频名称
-  src: vldeoUrl, //视频源
+  src: videoUrl, //视频源
   muted: false, //静音
   webFullScreen: false,
   speedRate: ["0.75", "1.0", "1.25", "1.5", "2.0"], //播放倍速
@@ -182,11 +191,53 @@ const handleVideoError = (e) => {
   }
 };
 
-// onUnmounted(() => {
-//   // 清除定时器
-//   cancelAnimationFrame(animationId.value);
-//   animationId.value = null;
-// });
+// 1.5 可播放监听事件，当浏览器能够开始播放指定的音频/视频时触发
+const onCanplay = (e) => {
+  // 判断是否点击生成按钮，点了开启定时器获取视频帧
+  if (videoGifFlag.value) {
+    let gif = new GIF({
+      workers: 2,
+      quality: 10,
+      width: document.getElementById("dPlayerVideoMain").videoWidth,
+      height: document.getElementById("dPlayerVideoMain").videoHeight,
+      workerScript: getGifWorker(), //自定义worker地址
+    });
+
+    // 开启定时器
+    let drawTimestamp = 0;
+    setGifTimer.value = window.setInterval(() => {
+      // 判断视频播放到底了清除定时器
+      if (
+        document.querySelector("#dPlayerVideoMain").currentTime >= endTime.value
+      ) {
+        // // 渲染图片
+        gif.on("finished", (blob) => {
+          window.open(URL.createObjectURL(blob));
+        });
+        gif.render();
+        return clearInterval(setGifTimer.value);
+      }
+      if (drawTimestamp === 100) {
+        let videoDom = document.getElementById("dPlayerVideoMain");
+        // videoDom.setAttribute("crossOrigin", "anonymous"); // 处理跨域
+        let canvas = document.getElementById("myCanvas");
+        canvas.width = videoDom.videoWidth;
+        canvas.height = videoDom.videoHeight;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
+        gif.addFrame(canvas, { delay: 100, copy: true });
+        drawTimestamp = 0;
+      }
+
+      // let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
+      // videoFrameList.value.push(canvas);
+      drawTimestamp += 50;
+    }, 50);
+
+    // 操作完之后关闭开关
+    videoGifFlag.value = false;
+  }
+};
 
 // 2.1 视频剪辑插件
 interact(".resize-drag")
@@ -336,41 +387,13 @@ function dragMoveListener(event) {
 // this function is used later in the resizing and gesture demos
 window.dragMoveListener = dragMoveListener;
 
-// const onCanplay = (ev) => {
-//   console.log(ev, "可以播放");
-//   let videoDome = document.getElementById("dPlayerVideoMain");
-//   let canvas = document.getElementById("myCanvas");
-//   canvas.width = videoDome.videoWidth;
-//   canvas.height = videoDome.videoHeight;
-//   console.log("canplay ", videoDome.videoWidth, videoDome.videoHeight);
-// };
-
-// 视频播放事件
-// const onPlay = (ev) => {
-//   console.log("播放");
-//   let videoDome = document.getElementById("dPlayerVideoMain");
-//   // 画布
-//   let canvas = document.getElementById("myCanvas");
-//   console.log("play", canvas.width, canvas.height);
-//   // videoDome.pause();
-//   setTimeout(() => {
-//     var ctx = canvas.getContext("2d");
-//     ctx.clearRect(0, 0, canvas.width, canvas.height);
-//     ctx.save();
-//     ctx.fillStyle = "rgba(255,255,255,1)";
-//     ctx.fillRect(0, 0, canvas.width, canvas.height);
-//     console.log("play canvas rect：", canvas.width, canvas.height);
-//     console.log(
-//       "play video rect：",
-//       videoDome.videoWidth,
-//       videoDome.videoHeight
-//     );
-//     ctx.drawImage(videoDome, 0, 0, canvas.width, canvas.height);
-//     ctx.restore();
-//     var oGrayImg = canvas.toDataURL("image/png");
-//     console.log(oGrayImg);
-//   }, 1000);
-// };
+// 3.1 点击生成按钮
+const handleCreateBtn = () => {
+  // 让视频回到起点，开始获取视频帧
+  document.querySelector("#dPlayerVideoMain").currentTime = dragX.value;
+  // 开启开关
+  videoGifFlag.value = true;
+};
 </script>
 
 <style lang="less" scoped>
