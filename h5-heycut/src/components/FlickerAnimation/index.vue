@@ -4,20 +4,20 @@
     <ul>
       <li>
         <div>
-          <img src="" alt="" />
+          <img src="@/assets/img/upload-img/upload-one.png" alt="" />
         </div>
 
         <h1>1.上传</h1>
       </li>
       <li><i></i><i></i><i></i></li>
       <li>
-        <div><img src="" alt="" /></div>
+        <div><img src="@/assets/img/upload-img/upload-two.png" alt="" /></div>
 
         <h1>1.上传</h1>
       </li>
       <li><i></i><i></i><i></i></li>
       <li>
-        <div><img src="" alt="" /></div>
+        <div><img src="@/assets/img/upload-img/upload-three.png" alt="" /></div>
 
         <h1>1.上传</h1>
       </li>
@@ -57,8 +57,8 @@
         border: 0.01rem solid #ebeffc;
         overflow: hidden;
         img {
-          width: 50%;
-          height: 50%;
+          width: 100%;
+          height: 100%;
         }
       }
       h1 {

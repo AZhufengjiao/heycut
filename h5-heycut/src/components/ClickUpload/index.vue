@@ -1,8 +1,25 @@
 <template>
   <div>
     <!-- 点击上传虚线组件 -->
-    <div v-if="videoUrl == null" class="click-upload">
-      <button @click="handleUpLoading">+点击上传视频</button>
+    <div
+      class="click-upload"
+      v-show="videoPlayFlag == false || videoPlayFlag == null"
+    >
+      <button @click="handleUpLoading">
+        <span v-if="videoPlayFlag == null">
+          + 点击上传视频{{ videoPlayFlag }}
+        </span>
+        <div
+          v-else-if="videoPlayFlag == false"
+          style="display: flex; justify-content: center; align-items: center"
+        >
+          <div>
+            <van-loading style="margin-right: 8px" color="#fff" size="22" />
+          </div>
+          视频处理中
+        </div>
+      </button>
+
       <input
         type="file"
         style="display: none"
@@ -11,17 +28,18 @@
         accept="video/*"
         @change="handleFileInput"
       />
+      <video
+        ref="videoDom"
+        controls
+        autoplay
+        :src="videoUrl"
+        @canplaythrough="getVideoDate2"
+        :style="{ width: '100%', height: '1.66rem', display: 'none' }"
+      ></video>
     </div>
-    <div class="video-box" v-if="videoUrl !== null">
+    <div class="video-box" v-show="videoPlayFlag == true">
       <!-- 视频播放 -->
       <div ref="v" class="video-plugIn">
-        <!-- <video
-          ref="videoDom"
-          controls
-          autoplay
-          :src="videoUrl"
-          :style="{ width: '100%', height: '1.66rem' }"
-        ></video> -->
         <vue3VideoPlay
           v-if="videoUrl !== null"
           v-bind="options"
@@ -30,7 +48,6 @@
           @play="onPlay"
           @timeupdate="handleseeking"
           @error="handleVideoError"
-          @stalled="handleVideoStalled"
           @canplay="onCanplay"
         />
       </div>
@@ -89,6 +106,10 @@ let videoGifFlag = ref(false);
 let setGifTimer = ref(null);
 // 视频每一帧数组
 let videoFrameList = ref([]);
+// 视频能否播放
+let videoPlayFlag = ref(null);
+// 视频每一帧定时器
+let timers = ref(null);
 
 // 视频截至时间                     ----- 视频剪辑插件
 let endTime = ref(null);
@@ -98,6 +119,8 @@ let startTime = ref(0);
 let dragX = ref(null);
 // 定时器  //用来赋值requestAnimationFrame的id，为之后取消它做准备
 var animationId = ref(null);
+// flag
+let flag = ref(true);
 
 // 点击上传视频
 const handleUpLoading = () => {
@@ -108,6 +131,7 @@ const handleUpLoading = () => {
 const handleFileInput = (e) => {
   // 获取视频播放的格式
   videoUrl.value = URL.createObjectURL(e.target.files[0]);
+  videoPlayFlag.value = false;
 };
 
 // 1.1vodeo插件 视频参数
@@ -137,8 +161,7 @@ const options = reactive({
     "fullScreen",
   ], //显示所有按钮,
 });
-
-// 1.2 获取视频时间
+// 1.2 获取视频时间 视频数据加载完成
 const getVideoDate = (e) => {
   let resizeDragDom = document.querySelector(".resize-drag");
   // 视频时长
@@ -148,21 +171,76 @@ const getVideoDate = (e) => {
 
   // 获取截取宽度播放终点时间=总时长/总宽度*截取视频宽度
   endTime.value = (videoTime.value / 325) * terminuWidth;
+
+  if (flag.value) {
+    // 视频总数
+    let time = videoTime.value / 7;
+    let arr = [];
+    let num = 0;
+    function sum(time) {
+      if (num + time > videoTime.value) {
+        return arr;
+      } else {
+        num += time;
+        arr.push(num);
+        return sum(time);
+      }
+    }
+    sum(time);
+    console.log(arr);
+
+    function fn() {
+      new Promise((resolve, reject) => {
+        arr.map((item) => {
+          document.getElementById("dPlayerVideoMain").currentTime = item;
+          let videoDom = document.getElementById("dPlayerVideoMain");
+          let canvas = document.getElementById("myCanvas");
+          canvas.width = videoDom.videoWidth;
+          canvas.height = videoDom.videoHeight;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
+          let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
+
+          console.log(dataURL);
+          // videoFrameList.value.push(dataURL);
+        });
+      });
+    }
+    fn();
+
+    // 开启定时器
+    // timers.value = window.setInterval(() => {
+    //   ++num;
+    //   let videoDom = document.getElementById("dPlayerVideoMain");
+    //   let canvas = document.getElementById("myCanvas");
+    //   canvas.width = videoDom.videoWidth;
+    //   canvas.height = videoDom.videoHeight;
+    //   var ctx = canvas.getContext("2d");
+    //   ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
+    //   let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
+
+    //   if (num >= time) {
+    //     clearInterval(timers.value);
+    //   }
+
+    //   videoFrameList.value.push(dataURL);
+    //   // console.log(time, num);
+    //   // console.log(dataURL);
+    // }, 20);
+    // console.log(videoFrameList.value[2]);
+    flag.value = false;
+  }
 };
+const getVideoDate2 = (e) => {
+  // console.log(e);
+};
+
 // 视频开始播放
 const onPlay = (e) => {
-  // function step() {
-  //   // 视频播放时间
-  //   let currentTime = document.querySelector("#dPlayerVideoMain").currentTime;
-  //   if (currentTime >= endTime.value) {
-  //     document.querySelector("#dPlayerVideoMain").currentTime = startTime.value;
-  //   } else {
-  //     console.log("12tgvfdv");
-  //     animationId.value = requestAnimationFrame(step); //为了在之后的每次浏览器刷新前都执行回调，递归调用回调
-  //   }
-  // }
-  // animationId.value = requestAnimationFrame(step); //最开始的调用
-  // console.log(endTime.value, "播放");
+  // 可以播放
+  if (e) {
+    // videoPlayFlag.value = true;
+  }
 };
 
 // 1.3 视频时长更新
@@ -178,18 +256,9 @@ const handleseeking = (e) => {
       (videoTime.value / 325) * dragX.value;
   }
 };
-const handleVideoStalled = (e) => {
-  console.log(e);
-  if (e) {
-    alert("视频出错啦");
-  }
-};
+
 // 1.4 视频播放错误
-const handleVideoError = (e) => {
-  if (e) {
-    alert("视频出错啦");
-  }
-};
+const handleVideoError = (e) => {};
 
 // 1.5 可播放监听事件，当浏览器能够开始播放指定的音频/视频时触发
 const onCanplay = (e) => {
@@ -219,7 +288,6 @@ const onCanplay = (e) => {
       }
       if (drawTimestamp === 100) {
         let videoDom = document.getElementById("dPlayerVideoMain");
-        // videoDom.setAttribute("crossOrigin", "anonymous"); // 处理跨域
         let canvas = document.getElementById("myCanvas");
         canvas.width = videoDom.videoWidth;
         canvas.height = videoDom.videoHeight;
@@ -230,7 +298,6 @@ const onCanplay = (e) => {
       }
 
       // let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
-      // videoFrameList.value.push(canvas);
       drawTimestamp += 50;
     }, 50);
 

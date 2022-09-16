@@ -60,6 +60,7 @@ const handleComress = (num) => {
   // height: 10.01rem;
   padding-bottom: 0.56rem;
   background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
+  background-image: url("@/assets/img/bj/background.png");
   .container {
     margin: auto;
     width: 3.55rem;
