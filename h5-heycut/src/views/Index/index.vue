@@ -40,7 +40,8 @@ component: {
   width: 100%;
   padding-bottom: 0.56rem;
   // height: 8.97rem;
-  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);  background-image: url("@/assets/img/bj/background.png");
+  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);  background-image: url("@/assets/img/bj/background.png");    background-attachment: fixed;
+    background-size: cover;
   // 版心
   .container {
     margin: auto;

@@ -49,7 +49,10 @@ component: {
 .record {
   width: 100%;
   height: 8.97rem;
-  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);  background-image: url("@/assets/img/bj/background.png");
+  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);  
+  background-image: url("@/assets/img/bj/background.png");  
+    background-attachment: fixed;
+    background-size: cover;
   overflow: hidden;
   .container {
     margin: auto;

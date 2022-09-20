@@ -28,7 +28,7 @@
         </ul>
       </div>
       <!-- 点击上传虚线组件 -->
-      <ClickUpload></ClickUpload>
+      <CompressUpload></CompressUpload>
       <!-- 滑动画面 -->
       <SlideModule></SlideModule>
       <!-- 更多工具 -->
@@ -41,12 +41,12 @@
 import Nav from "@/components/Nav/index.vue"; // 顶部导航组件
 import Title from "@/components/Title/index.vue"; // 标题组件
 import FlickerAnimation from "@/components/FlickerAnimation/index.vue"; // 闪烁动画组件
-import ClickUpload from "@/components/ClickUpload/index.vue"; // 击上传虚线组件
+import CompressUpload from "@/components/compressUpload/index.vue"; // 击上传虚线组件
 import SlideModule from "@/components/SlideModule/index.vue"; // 滑动画面
 import MoreTools from "@/components/MoreTools/index.vue"; // 更多工具
 import { ref } from "vue";
 component: {
-  Nav, Title, FlickerAnimation, ClickUpload, SlideModule, MoreTools;
+  Nav, Title, FlickerAnimation, CompressUpload, SlideModule, MoreTools;
 }
 let current = ref(1);
 const handleComress = (num) => {
@@ -61,6 +61,8 @@ const handleComress = (num) => {
   padding-bottom: 0.56rem;
   background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
   background-image: url("@/assets/img/bj/background.png");
+  background-attachment: fixed;
+  background-size: cover;
   .container {
     margin: auto;
     width: 3.55rem;
@@ -72,7 +74,8 @@ const handleComress = (num) => {
       height: 1.11rem;
       border: 0.03rem dashed rgba(5, 68, 255, 0.32);
       border-radius: 0.12rem 0.12rem 0 0;
-      border-bottom: none;
+      // border-bottom: none;
+
       h2 {
         margin-bottom: 0.11rem;
         font-size: 0.12rem;
@@ -102,14 +105,14 @@ const handleComress = (num) => {
         }
       }
     }
-    // 击上传虚线组件
-    .click-upload {
-      background: red;
-      margin-top: 0.04rem;
-      border-top: none !important;
-      height: 1.43rem;
-      border-radius: 0 0 0.12rem 0.12rem;
-    }
+    // // 击上传虚线组件
+    // .click-upload {
+    //   background: red;
+    //   margin-top: 0.04rem;
+    //   border-top: none !important;
+    //   height: 1.43rem;
+    //   border-radius: 0 0 0.12rem 0.12rem;
+    // }
   }
 }
 // .compress {

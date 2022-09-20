@@ -15,4 +15,11 @@
   text-align: center;
   color: #2c3e50;
 }
+// loading图标
+.van-loading,
+.van-loading__spinner,
+.van-loading__spinner--spinner {
+  width: 40px !important;
+  height: 40px !important;
+}
 </style>

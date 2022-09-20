@@ -37,6 +37,7 @@
         :style="{ width: '100%', height: '1.66rem', display: 'none' }"
       ></video>
     </div>
+
     <div class="video-box" v-show="videoPlayFlag == true">
       <!-- 视频播放 -->
       <div ref="v" class="video-plugIn">
@@ -189,24 +190,52 @@ const getVideoDate = (e) => {
     sum(time);
     console.log(arr);
 
-    function fn() {
-      new Promise((resolve, reject) => {
-        arr.map((item) => {
-          document.getElementById("dPlayerVideoMain").currentTime = item;
-          let videoDom = document.getElementById("dPlayerVideoMain");
-          let canvas = document.getElementById("myCanvas");
-          canvas.width = videoDom.videoWidth;
-          canvas.height = videoDom.videoHeight;
-          var ctx = canvas.getContext("2d");
-          ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
-          let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
+    function fn(item) {
+      return new Promise((resolve, reject) => {
+        // setTimeout(() => {
+        document.getElementById("dPlayerVideoMain").currentTime = item;
+        let videoDom = document.getElementById("dPlayerVideoMain");
+        let canvas = document.getElementById("myCanvas");
+        canvas.width = videoDom.videoWidth;
+        canvas.height = videoDom.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
+        let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
+        console.log(dataURL);
+        // videoFrameList.value.push(dataURL);
 
-          console.log(dataURL);
-          // videoFrameList.value.push(dataURL);
-        });
+        if (resolve) {
+          return true;
+        } else {
+          return false;
+        }
+        // }, 100);
       });
     }
-    fn();
+
+    arr.map((item) => {
+      fn(item);
+    });
+
+    // fn(arr[0])
+    //   .then(() => {
+    //     fn(arr[1]);
+    //   })
+    //   .then(() => {
+    //     fn(arr[2]);
+    //   })
+    //   .then(() => {
+    //     fn(arr[3]);
+    //   })
+    //   .then(() => {
+    //     fn(arr[4]);
+    //   })
+    //   .then(() => {
+    //     fn(arr[5]);
+    //   })
+    //   .then(() => {
+    //     fn(arr[6]);
+    //   });
 
     // 开启定时器
     // timers.value = window.setInterval(() => {
