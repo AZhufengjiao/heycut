@@ -19,7 +19,7 @@
 .van-loading,
 .van-loading__spinner,
 .van-loading__spinner--spinner {
-  width: 40px !important;
-  height: 40px !important;
+  width: 0.4rem !important;
+  height: 0.4rem !important;
 }
 </style>

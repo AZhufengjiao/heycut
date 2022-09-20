@@ -49,10 +49,10 @@ component: {
 .record {
   width: 100%;
   height: 8.97rem;
-  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);  
-  background-image: url("@/assets/img/bj/background.png");  
-    background-attachment: fixed;
-    background-size: cover;
+  background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
+  background-image: url("@/assets/img/bj/background.png");
+  background-attachment: fixed;
+  background-size: cover;
   overflow: hidden;
   .container {
     margin: auto;
@@ -115,8 +115,8 @@ component: {
               position: absolute;
               border: none;
               background: #fff;
-              top: 2px;
-              left: 2px;
+              top: 0.04rem;
+              left: 0.04rem;
               border-radius: 0.12rem;
               font-size: 0.16rem;
               font-family: AlimamaShuHeiTi;

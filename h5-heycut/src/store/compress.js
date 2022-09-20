@@ -5,11 +5,17 @@ const compress = {
   state() {
     return {
       token: "",
+      // 压缩大小
+      size: "1M",
     };
   },
   mutations: {
     setToken(state, payload) {
       state.token = payload;
+    },
+    // 修改压缩大小
+    setSize(state, payload) {
+      state.size = payload;
     },
   },
 };

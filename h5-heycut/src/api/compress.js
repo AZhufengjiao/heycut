@@ -29,3 +29,37 @@ export function getUploadProof() {
     "get"
   );
 }
+
+/** 压缩进度chaxun
+ * @param {*} persistentId
+ * @returns
+ */
+export function getCompressSchedule(persistentId) {
+  return requestWithoutToken(
+    "/wap/app-api/tools/tool-compress/operationStatus1",
+    "get",
+    { persistentId }
+  );
+}
+
+/** 添加水印进度查询
+ * @param {*} wmPid
+ * @returns
+ */
+export function getWatermarkSchedule(wmPid) {
+  return requestWithoutToken(
+    "/wap/app-api/tools/tool-compress/operationStatusWm",
+    "get",
+    { wmPid }
+  );
+}
+
+/** 数据记录
+ * @returns
+ */
+export function dataRecord() {
+  return requestWithoutToken(
+    "/wap/app-api/tools/tool-compress/saveData",
+    "post"
+  );
+}

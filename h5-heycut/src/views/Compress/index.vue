@@ -12,21 +12,6 @@
       </Title>
       <!-- 闪烁动画 -->
       <FlickerAnimation></FlickerAnimation>
-      <!-- 选择压缩大小 -->
-      <div class="compress-size">
-        <h2>选择需要压缩的大小</h2>
-        <ul>
-          <li @click="handleComress(1)" :class="{ liStyle: current === 1 }">
-            表情包&lt;1M
-          </li>
-          <li @click="handleComress(2)" :class="{ liStyle: current === 2 }">
-            表情包&lt;M
-          </li>
-          <li @click="handleComress(3)" :class="{ liStyle: current === 3 }">
-            更多
-          </li>
-        </ul>
-      </div>
       <!-- 点击上传虚线组件 -->
       <CompressUpload></CompressUpload>
       <!-- 滑动画面 -->
@@ -44,14 +29,12 @@ import FlickerAnimation from "@/components/FlickerAnimation/index.vue"; // 闪�
 import CompressUpload from "@/components/compressUpload/index.vue"; // 击上传虚线组件
 import SlideModule from "@/components/SlideModule/index.vue"; // 滑动画面
 import MoreTools from "@/components/MoreTools/index.vue"; // 更多工具
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
+import { useStore } from "vuex";
 component: {
   Nav, Title, FlickerAnimation, CompressUpload, SlideModule, MoreTools;
 }
-let current = ref(1);
-const handleComress = (num) => {
-  current.value = num;
-};
+let store = useStore();
 </script>
 
 <style lang="less" scoped>
@@ -91,7 +74,7 @@ const handleComress = (num) => {
           width: 1.02rem;
           height: 0.45rem;
           background: rgba(255, 255, 255, 0.4);
-          border-radius: 8px;
+          border-radius: 0.08rem;
           border: 0.01rem solid #c8cddf;
           line-height: 0.45rem;
           font-size: 0.14rem;

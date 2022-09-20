@@ -6,7 +6,9 @@
       <span>SOOGIF</span>
     </div>
     <!-- 右边 -->
-    <div class="nav-right"></div>
+    <div class="nav-right">
+      <img src="@/assets/img/icon-more/more.png" alt="" />
+    </div>
   </div>
 </template>
 
@@ -41,7 +43,10 @@
   .nav-right {
     width: 0.2rem;
     height: 0.16rem;
-    background: #000000;
+    img {
+      width: 100%;
+      height: 100%;
+    }
   }
 }
 </style>

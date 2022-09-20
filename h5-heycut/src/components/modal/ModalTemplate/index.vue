@@ -1,29 +1,47 @@
 <template>
-  <div v-if="modalObj.flag" class="loadingmodal">
+  <!-- 压缩大小弹出框 -->
+  <div class="loadingmodal" v-if="modalObj.flag">
     <!-- 遮罩层 -->
     <div class="zzc"></div>
     <!-- 弹出框盒子部分 -->
-    <div class="loadingmodal-box">
-      <van-loading type="spinner"></van-loading>
-      <p>压缩中</p>
-      <h1>请不要操作页面</h1>
+    <div class="download1-box">
+      <!-- 退出按钮 -->
+      <div class="exitBtn" @click="exitBtnHandle">x</div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { onUpdated, ref, toRefs, watch } from "vue";
-import { Toast } from "vant";
 components: {
 }
 // 父子通讯
 const props = defineProps({ modalObj: Object });
 const emit = defineEmits(["updateFlag"]);
 let { modalObj } = toRefs(props);
+// 退出按钮
+const exitBtnHandle = () => {
+  emit("updateFlag", false);
+};
 
-// // 退出按钮
-// const exitBtnHandle = () => {
-//   emit("updateFlag", false);
+// 父组件代码// 遮罩层变量           ------------弹出框遮罩层
+// <compressSize
+//     :modalObj="modalObj"
+//     @updateFlag="compressSizeFlag"
+//   ></compressSize>
+// // 遮罩层变量
+// let modalObj = ref({
+//   flag: false,
+// });
+// // 打开弹出框
+// const handleBtn = () => {
+//   modalObj.value.flag = true;
+//   console.log(modalObj.value.flag);
+// };
+// // 让弹出框关闭
+// const compressSizeFlag = (flag) => {
+//   console.log(flag);
+//   modalObj.value.flag = flag;
 // };
 </script>
 
@@ -107,6 +125,23 @@ ul {
     }
     h1 {
       margin-top: -0.15rem;
+    }
+  }
+  // 弹出框盒子部分
+  .download1-box {
+    position: relative;
+    z-index: 10;
+    width: 4.33rem;
+    height: 2.45rem;
+    background: red;
+    box-shadow: 0px 0.04rem 0.12rem 0px rgba(0, 0, 0, 0.2);
+    border-radius:0.04rem ;
+    // 退出按钮
+    .exitBtn {
+      position: absolute;
+      top: 0;
+      right: 0;
+      font-size: 0.14rem
     }
   }
 }

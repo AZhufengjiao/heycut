@@ -14,7 +14,7 @@
           style="display: flex; justify-content: center; align-items: center"
         >
           <div>
-            <van-loading style="margin-right: 8px" color="#fff" size="22" />
+            <van-loading style="margin-right: 0.08rem" color="#fff" size="22" />
           </div>
           视频处理中
         </div>
@@ -551,20 +551,20 @@ const handleCreateBtn = () => {
     .drag-left {
       z-index: 3;
       position: absolute;
-      width: 15px;
+      width: 0.15rem;
       height: 121%;
-      left: -15px;
+      left: -0.15rem;
       border-radius: 0.04rem;
-      bottom: -5px;
+      bottom: -0.05rem;
     }
     .drag-right {
       z-index: 3;
-      width: 15px;
+      width: 0.15rem;
       height: 121%;
       position: absolute;
       border-radius: 0.04rem;
-      right: -15px;
-      top: -5px;
+      right: -0.15rem;
+      top: -0.05rem;
     }
     div {
       display: flex;
@@ -618,7 +618,7 @@ const handleCreateBtn = () => {
   border: 0.05rem solid #af79f7;
   border-left: 0.15rem solid #af79f7;
   border-right: 0.15rem solid #af79f7;
-  font-size: 20px;
+  font-size: 0.2rem;
   font-family: sans-serif;
   touch-action: none;
   box-sizing: border-box;
