@@ -41,9 +41,49 @@
 <script setup>
 import Nav from "@/components/Nav/index.vue"; // 顶部导航组件
 import Title from "@/components/Title/index.vue"; // 标题组件
+// 接口
+import { voluntarilyLogin, WeChatLogin } from "@/api/login.js";
+import { onMounted, ref } from "vue";
 component: {
   Nav, Title;
 }
+
+onMounted(() => {
+  //是否是微信浏览器
+  if (/(micromessenger)/i.test(navigator.userAgent)) {
+    //是否电脑微信或者微信开发者工具
+    if (
+      /(WindowsWechat)/i.test(navigator.userAgent) ||
+      /(wechatdevtools)/i.test(navigator.userAgent)
+    ) {
+      alert("电脑微信或者微信开发者工具");
+    } else {
+      //手机微信打开的浏览器
+      console.log("手机微信");
+      WeChatLoginHandle();
+    }
+  } else {
+    console.log("其他浏览器");
+    voluntarilyLoginHandle();
+  }
+});
+
+// 自动登录
+const voluntarilyLoginHandle = async () => {
+  return await voluntarilyLogin().then((res) => {
+    if (res.data.code == 200) {
+      console.log(res.data.data);
+    }
+  });
+};
+// 微信登录
+const WeChatLoginHandle = async () => {
+  return await WeChatLogin().then((res) => {
+    if (res.data.code == 200) {
+      console.log(res.data.data);
+    }
+  });
+};
 </script>
 <style lang="less" scoped>
 .record {
@@ -115,8 +155,8 @@ component: {
               position: absolute;
               border: none;
               background: #fff;
-              top: 0.04rem;
-              left: 0.04rem;
+              top: 0.02rem;
+              left: 0.02rem;
               border-radius: 0.12rem;
               font-size: 0.16rem;
               font-family: AlimamaShuHeiTi;

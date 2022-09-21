@@ -4,28 +4,59 @@
     <ul>
       <li>
         <div>
-          <img src="@/assets/img/upload-img/upload-one.png" alt="" />
+          <img class="imgOne" :src="imgOne" alt="" />
         </div>
-
         <h1>1.上传</h1>
       </li>
-      <li><i></i><i></i><i></i></li>
       <li>
-        <div><img src="@/assets/img/upload-img/upload-two.png" alt="" /></div>
-
-        <h1>1.上传</h1>
+        <i class="iStyle i"></i>
+        <i class="i"></i>
+        <i class="i"></i>
       </li>
-      <li><i></i><i></i><i></i></li>
       <li>
-        <div><img src="@/assets/img/upload-img/upload-three.png" alt="" /></div>
-
-        <h1>1.上传</h1>
+        <div><img :src="imgTwo" alt="" /></div>
+        <h1>2.拼接</h1>
+      </li>
+      <li>
+        <i class="i"></i>
+        <i></i>
+        <i></i>
+      </li>
+      <li>
+        <div><img :src="imgThree" alt="" /></div>
+        <h1>3.下载</h1>
       </li>
     </ul>
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
+const store = useStore();
+
+onMounted(() => {
+  store.commit("star/setImgOne", true);
+  store.commit("star/setImgTwo", true);
+  store.commit("star/setImgThree", true);
+});
+
+const imgOne = computed(() =>
+  store.state.star.imgOne
+    ? require("@/assets/img/upload-img/upload-one.png")
+    : require("@/assets/img/upload-img/wc-one.png")
+);
+const imgTwo = computed(() =>
+  store.state.star.imgTwo
+    ? require("@/assets/img/upload-img/upload-two.png")
+    : require("@/assets/img/upload-img/wc-two.png")
+);
+const imgThree = computed(() =>
+  store.state.star.imgThree
+    ? require("@/assets/img/upload-img/upload-three.png")
+    : require("@/assets/img/upload-img/wc-three.png")
+);
+</script>
 
 <style lang="less" scoped>
 .flicker-animation {
@@ -74,6 +105,10 @@
         display: inline-flex;
         background: #e8eefa;
         border-radius: 50%;
+      }
+      .iStyle {
+        // color: #836ffa;
+        // background: #836ffa;
       }
     }
   }

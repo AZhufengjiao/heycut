@@ -55,11 +55,17 @@ export function getWatermarkSchedule(wmPid) {
 }
 
 /** 数据记录
+ * @param {*} url 七牛URL
  * @returns
  */
-export function dataRecord() {
+export function dataRecord(url) {
+  let formData = new FormData();
+  formData.append("url", url);
   return requestWithoutToken(
     "/wap/app-api/tools/tool-compress/saveData",
-    "post"
+    "post",
+    {
+      url,
+    }
   );
 }

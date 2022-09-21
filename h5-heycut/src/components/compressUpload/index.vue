@@ -39,16 +39,19 @@
   <!-- 压缩完成 -->
   <div class="compress-succeed" v-else>
     <div class="video-box">
-      <img :src="gifObj.fileName" alt="" />
+      <img :src="gifObj.newWmFileName" alt="" />
     </div>
     <div class="button-box">
       <div class="download-btn">
-        <div><button>下载GIF</button></div>
+        <div><button @click="downloadImg">下载GIF</button></div>
         <div class="div-style">&yen;1.00去水印</div>
       </div>
-      <div class="new-make"><button>重新制作</button></div>
+      <div class="new-make"><button @click="anewMake">重新制作</button></div>
     </div>
   </div>
+
+  <!-- 滑动画面 -->
+  <SlideModule v-if="gifObj == null"></SlideModule>
 
   <!-- 选择压缩大小弹出框 -->
   <compressSizeModal
@@ -62,19 +65,21 @@
 import { ref, reactive, watch, onUnmounted, computed, onMounted } from "vue";
 import loadingModal from "@/components/modal/loadingModal"; // 上传 upload弹出框
 import compressSizeModal from "@/components/modal/compressSize/index.vue"; // 选择压缩大小弹出框
+import SlideModule from "@/components/SlideModule/index.vue"; // 滑动画面
 // 视频插件
 import { videoPlay } from "vue3-video-play";
-// 接口
+// 压缩接口
 import {
   getUploadProof,
   componentVideo,
   getCompressSchedule,
   getWatermarkSchedule,
+  dataRecord,
 } from "@/api/compress.js";
 import { useStore } from "vuex";
 import axios from "axios";
 components: {
-  loadingModal, videoPlay, compressSizeModal;
+  loadingModal, videoPlay, compressSizeModal, SlideModule;
 }
 const store = useStore();
 // file Dom            ---------file数据
@@ -112,7 +117,7 @@ onMounted(() => {
   store.commit("compress/setSize", "1M");
 });
 
-// 1. 点击跳转样式，切换选中             ----- 上
+// 1. 点击跳转样式，切换选中             ----- 上 选择压缩大小
 const handleComress = (num, num2) => {
   // 如果点击是更多，打开弹出框
   if (num2 === 3) {
@@ -140,12 +145,16 @@ const compressSizeFlag = (flag) => {
   CompressModalObj.value.flag = flag;
 };
 
-// 1.点击上传视频按钮，打开file文件夹    ------ 下
+// 1.点击上传视频按钮，打开file文件夹    ------ 下 上传压缩
 const handleUplaod = () => {
   fileDom.value.click();
 };
 // 2.input change事件
 const FileChange = (e) => {
+  // 跳转样式  ***
+  store.commit("star/setImgOne", false);
+  // 修改i的样式
+  document.querySelector(".iStyle").style.background = "#836ffa";
   //  存储上传的gif文件数据
   files.value = e.target.files[0];
 
@@ -234,14 +243,70 @@ const getWatermarkPlan = async () => {
       compressTimer.value = null;
 
       gifObj.value = res.data.data;
-      gifObj.value.fileName =
-        "http://wap.img.soogif.com/" + gifObj.value.fileName;
+      gifObj.value.newWmFileName =
+        "http://wap.img.soogif.com/" + gifObj.value.wmFileName;
       console.log(gifObj.value);
 
       // 关闭弹出框
       modalObj.value.flag = false;
+
+      setDataRecord();
+
+      // 修改样式 ***
+      store.commit("star/setImgTwo", false);
+      // 修改i的样式
+      document.querySelectorAll(".i").forEach((item) => {
+        item.style.background = "#836ffa";
+      });
     }
   });
+};
+
+// 7.数据记录
+const setDataRecord = async () => {
+  let url = gifObj.value.fileName;
+  return await dataRecord(url).then((res) => {
+    if (res.data.code == 200) {
+      console.log(res);
+    }
+  });
+};
+
+// 8.点击重新制作
+const anewMake = () => {
+  // 清空所有数据
+  gifObj.value = null;
+
+  store.commit("star/setImgTwo", true);
+  store.commit("star/setImgThree", true);
+  store.commit("star/setImgOne", true);
+  document.querySelectorAll(".i").forEach((item) => {
+    item.style.background = "#e8eefa";
+  });
+};
+
+// 9.下载gif到相册
+const downloadImg = () => {
+  let Url =   gifObj.value.newWmFileName  //图片路径，也可以传值进来
+  var triggerEvent = "touchstart"; //指定下载方式
+  var blob = new Blob([""], { type: "application/octet-stream" }); //二进制大型对象blob
+  var url = URL.createObjectURL(blob); //创建一个字符串路径空位
+  var a = document.createElement("a"); //创建一个 a 标签
+  a.href = Url; //把路径赋到a标签的href上
+  //正则表达式，这里是把图片文件名分离出来。拿到文件名赋到a.download,作为文件名来使用文本
+  a.download = Url.replace(/(.*\/)*([^.]+.*)/gi, "$2").split("?")[0];
+  /* var e = document.createEvent('MouseEvents');  //创建事件（MouseEvents鼠标事件）
+	    e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null); //初始化鼠标事件（initMouseEvent已弃用）*/
+
+  //代替方法。创建鼠标事件并初始化（后面这些参数我也不清楚，参考文档吧 https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent）
+  var e = new MouseEvent(
+    "click",
+    (true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+  );
+  //派遣后，它将不再执行任何操作。执行保存到本地
+  a.dispatchEvent(e);
+  //释放一个已经存在的路径（有创建createObjectURL就要释放revokeObjectURL）
+  URL.revokeObjectURL(url);
 };
 </script>
 
@@ -319,7 +384,7 @@ button {
   width: 100%;
   .video-box {
     width: 3.55rem;
-    height: 1.66rem;
+    // height: 1.66rem;
     #refPlayerWrap {
       width: 100%;
       height: 100%;

@@ -89,9 +89,11 @@ import { videoPlay } from "vue3-video-play";
 import interact from "interactjs";
 import GIF from "../../../static/gif.js";
 import { getGifWorker } from "../../../static/gif.worker.js";
+import { useStore } from "vuex";
 component: {
   videoPlay;
 }
+let store = useStore();
 // file文件 DOM                        ----- file文件
 let uploadDom = ref(null);
 // 视频url
@@ -130,6 +132,10 @@ const handleUpLoading = () => {
 
 // 用户选择视频
 const handleFileInput = (e) => {
+  // 跳转样式  ***
+  store.commit("star/setImgOne", false);
+  // 修改i的样式
+  document.querySelector(".iStyle").style.background = "#836ffa";
   // 获取视频播放的格式
   videoUrl.value = URL.createObjectURL(e.target.files[0]);
   videoPlayFlag.value = false;
