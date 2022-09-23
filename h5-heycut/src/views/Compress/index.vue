@@ -45,7 +45,8 @@ onMounted(() => {
       /(WindowsWechat)/i.test(navigator.userAgent) ||
       /(wechatdevtools)/i.test(navigator.userAgent)
     ) {
-      alert("电脑微信或者微信开发者工具");
+      console.log("电脑微信或者微信开发者工具");
+      WeChatLoginHandle();
     } else {
       //手机微信打开的浏览器
       console.log("手机微信");
@@ -62,14 +63,28 @@ const voluntarilyLoginHandle = async () => {
   return await voluntarilyLogin().then((res) => {
     if (res.data.code == 200) {
       console.log(res.data.data);
+      store.commit("user/setUserObj", res.data.data);
     }
   });
 };
 // 微信登录
 const WeChatLoginHandle = async () => {
+  // const redirectURL = encodeURIComponent(window.location.href);
+  // const wechatId = "wx848239f71a9bae68";
+  // const redirectURI =
+  //   "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" +
+  //   wechatId +
+  //   "&redirect_uri=" +
+  //   redirectURL +
+  //   "&response_type=code&scope=snsapi_userinfo&state=&connect_redirect=1#wechat_redirect";
+  // window.location.href = redirectURI;
+
+  // console.log(window.location);
+
   return await WeChatLogin().then((res) => {
     if (res.data.code == 200) {
       console.log(res.data.data);
+      store.commit("user/setUserObj", res.data.data);
     }
   });
 };

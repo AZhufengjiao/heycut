@@ -59,7 +59,7 @@ ul {
     width: 100%;
     height: 100%;
     background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(0px);
+    backdrop-filter: blur(0);
   }
 
   // 弹出框盒子部分
@@ -83,6 +83,25 @@ ul {
       width: 0.4rem !important;
       height: 0.4rem !important;
       display: inline-block;
+    }
+
+    /* 加载中遮挡框 */
+    .van-popup {
+      width: 1.6rem !important;
+      height: 1.53rem;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 0.12rem;
+    }
+    .van-loading {
+      width: 0.4rem !important;
+      height: 0.4rem !important;
+      font-size: 0.4rem !important;
+    }
+
+    ::v-deep .van-loading__spinner {
+      font-size: 0.4rem !important;
+      width: 0.4rem !important;
+      height: 0.4rem !important;
     }
 
     // 退出按钮

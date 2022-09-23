@@ -89,7 +89,7 @@ ul {
     background: rgba(255, 255, 255, 0.7);
     background: rgba(244, 244, 244, 0.7);
     // background: #f4f4f4;
-    backdrop-filter: blur(0px);
+    backdrop-filter: blur(0);
   }
 
   // 弹出框盒子部分
@@ -194,7 +194,7 @@ ul {
         color: #333333;
       }
       .liStyle {
-        border: 0.01rem  solid #0544ff;
+        border: 0.01rem solid #0544ff;
         color: #0544ff;
       }
     }

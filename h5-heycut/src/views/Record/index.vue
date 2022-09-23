@@ -44,6 +44,7 @@ import Title from "@/components/Title/index.vue"; // 标题组件
 // 接口
 import { voluntarilyLogin, WeChatLogin } from "@/api/login.js";
 import { onMounted, ref } from "vue";
+import { useStore } from "vuex";
 component: {
   Nav, Title;
 }
@@ -72,7 +73,7 @@ onMounted(() => {
 const voluntarilyLoginHandle = async () => {
   return await voluntarilyLogin().then((res) => {
     if (res.data.code == 200) {
-      console.log(res.data.data);
+      store.commit("user/setUserObj", res.data.data);
     }
   });
 };
@@ -80,7 +81,7 @@ const voluntarilyLoginHandle = async () => {
 const WeChatLoginHandle = async () => {
   return await WeChatLogin().then((res) => {
     if (res.data.code == 200) {
-      console.log(res.data.data);
+      store.commit("user/setUserObj", res.data.data);
     }
   });
 };
@@ -125,10 +126,9 @@ const WeChatLoginHandle = async () => {
           padding: 0.15rem 0.24rem;
           height: 0.74rem;
           background: #ffffff;
-          border-radius: 0px 0px 0.12rem 0.12rem;
+          border-radius: 0 0 0.12rem 0.12rem;
           div {
             position: relative;
-            // clip-path: inset(0 0 round 5px);
             text-align: center;
             line-height: 0.44rem;
             width: 1.49rem;

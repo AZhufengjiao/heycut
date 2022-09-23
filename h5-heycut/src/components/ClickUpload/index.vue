@@ -1,16 +1,11 @@
 <template>
   <div>
     <!-- 点击上传虚线组件 -->
-    <div
-      class="click-upload"
-      v-show="videoPlayFlag == false || videoPlayFlag == null"
-    >
+    <div class="click-upload" v-if="videoPlayFlag == 1 || videoPlayFlag == 2">
       <button @click="handleUpLoading">
-        <span v-if="videoPlayFlag == null">
-          + 点击上传视频{{ videoPlayFlag }}
-        </span>
+        <span v-if="videoPlayFlag == 1"> + 点击上传视频 </span>
         <div
-          v-else-if="videoPlayFlag == false"
+          v-if="videoPlayFlag == 2"
           style="display: flex; justify-content: center; align-items: center"
         >
           <div>
@@ -38,12 +33,12 @@
       ></video>
     </div>
 
-    <video
+    <!-- <video
       :src="videoUrl"
       ref="videoDom"
       :style="{ height: '100px', width: '100%' }"
       @canplaythrough="myFunction"
-    ></video>
+    ></video> -->
 
     <!-- v-show="videoPlayFlag == true" -->
     <div style="opacity: 0" class="video-box">
@@ -138,6 +133,7 @@ import interact from "interactjs";
 import GIF from "../../../static/gif.js";
 import { getGifWorker } from "../../../static/gif.worker.js";
 import { useStore } from "vuex";
+import MP4Box from "mp4box";
 component: {
   videoPlay;
 }
@@ -148,6 +144,7 @@ let uploadDom = ref(null);
 let videoUrl = ref(null);
 // 视频video DOM
 let videoDom = ref(null);
+let file = ref(null);
 
 // video时长                           ----- video变量
 let videoTime = ref(null);
@@ -158,7 +155,7 @@ let setGifTimer = ref(null);
 // 视频每一帧数组
 let videoFrameList = ref([]);
 // 视频能否播放
-let videoPlayFlag = ref(null);
+let videoPlayFlag = ref(1); // 1是正常状态  2是load状态 3是隐藏
 // 视频每一帧定时器
 let timers = ref(null);
 let marginTop = ref("-3.2rem");
@@ -181,13 +178,14 @@ const handleUpLoading = () => {
 
 // 用户选择视频
 const handleFileInput = (e) => {
+  file.value = e.target.files[0];
   // 跳转样式  ***
   store.commit("star/setImgOne", false);
   // 修改i的样式
   document.querySelector(".iStyle").style.background = "#836ffa";
   // 获取视频播放的格式
   videoUrl.value = URL.createObjectURL(e.target.files[0]);
-  videoPlayFlag.value = false;
+  videoPlayFlag.value = 2;
 };
 
 // 1.1vodeo插件 视频参数
@@ -228,9 +226,6 @@ const getVideoDate = (e) => {
   // 获取截取宽度播放终点时间=总时长/总宽度*截取视频宽度
   endTime.value = (videoTime.value / 325) * terminuWidth;
 
-  // 视频能播放
-  videoPlayFlag.value = true;
-
   if (flag.value) {
     // 视频总数
     let time = videoTime.value / 7;
@@ -250,6 +245,8 @@ const getVideoDate = (e) => {
     let num2 = 0;
     function fn() {
       if (num2 >= arr.length) {
+        // 视频能播放
+        videoPlayFlag.value = 3;
         document.querySelector(".video-box").style.opacity = 1;
         marginTop.value = 0;
         // 修改样式 ***
@@ -292,6 +289,13 @@ const getVideoDate2 = (e) => {
 
 // 视频开始播放
 const onPlay = (e) => {
+  const mp4boxFile = MP4Box.createFile();
+  const reader = new FileReader();
+  reader.readAsArrayBuffer(file.value);
+
+  mp4boxFile.onReady = function (info) {
+    console.log(info);
+  };
   // 可以播放
   if (e) {
     // videoPlayFlag.value = true;
@@ -314,7 +318,12 @@ const handleseeking = (e) => {
 
 // 1.4 视频播放错误
 const handleVideoError = (e) => {
-  console.log(111, e);
+  // 视频不能播放
+  if (e) {
+    setTimeout(() => {
+      videoPlayFlag.value = 1;
+    }, 1000);
+  }
 };
 
 // const handleCanplaythrough = (e) => {
@@ -517,9 +526,28 @@ window.dragMoveListener = dragMoveListener;
 // 3.1 点击生成按钮
 const handleCreateBtn = () => {
   // 让视频回到起点，开始获取视频帧
-  document.querySelector("#dPlayerVideoMain").currentTime = dragX.value;
-  // 开启开关
+  // document.querySelector("#dPlayerVideoMain").currentTime = dragX.value;
+  // 开启开关,onCanplay 事件中生成gif
   videoGifFlag.value = true;
+};
+
+const checkVideoCode = async (file) => {
+  return new Promise((resolve, reject) => {
+    const mp4boxFile = MP4Box.createFile();
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file.tempFile);
+    reader.onload = function (e) {
+      const arrayBuffer = e.target.result;
+      arrayBuffer.fileStart = 0;
+      mp4boxFile.appendBuffer(arrayBuffer);
+    };
+    mp4boxFile.onReady = function (info) {
+      resolve(info);
+    };
+    mp4boxFile.onError = function (info) {
+      reject(info);
+    };
+  });
 };
 </script>
 

@@ -44,7 +44,7 @@
     <div class="button-box">
       <div class="download-btn">
         <div><button @click="downloadImg">下载GIF</button></div>
-        <div class="div-style">&yen;1.00去水印</div>
+        <div class="div-style" @click="handlePay">&yen;1.00去水印</div>
       </div>
       <div class="new-make"><button @click="anewMake">重新制作</button></div>
     </div>
@@ -76,6 +76,13 @@ import {
   getWatermarkSchedule,
   dataRecord,
 } from "@/api/compress.js";
+// 支付接口
+import {
+  createRecord,
+  inquireImgPayState,
+  inquireImgHavePaidState,
+  getJSAPIParams,
+} from "@/api/pay.js";
 import { useStore } from "vuex";
 import axios from "axios";
 components: {
@@ -123,9 +130,6 @@ const handleComress = (num, num2) => {
   if (num2 === 3) {
     // 打开弹出框
     CompressModalObj.value.flag = true;
-  } else {
-    // 让更多为空
-    moreNum.value = null;
   }
   if (num !== null) {
     current.value = num;
@@ -151,6 +155,9 @@ const handleUplaod = () => {
 };
 // 2.input change事件
 const FileChange = (e) => {
+  // 用户选择url
+  gifUrl.value = e.target.files[0].name;
+
   // 跳转样式  ***
   store.commit("star/setImgOne", false);
   // 修改i的样式
@@ -250,6 +257,7 @@ const getWatermarkPlan = async () => {
       // 关闭弹出框
       modalObj.value.flag = false;
 
+      // 数据记录
       setDataRecord();
 
       // 修改样式 ***
@@ -267,7 +275,7 @@ const setDataRecord = async () => {
   let url = gifObj.value.fileName;
   return await dataRecord(url).then((res) => {
     if (res.data.code == 200) {
-      console.log(res);
+      console.log("数据记录", res);
     }
   });
 };
@@ -287,7 +295,7 @@ const anewMake = () => {
 
 // 9.下载gif到相册
 const downloadImg = () => {
-  let Url =   gifObj.value.newWmFileName  //图片路径，也可以传值进来
+  let Url = gifObj.value.newWmFileName; //图片路径，也可以传值进来
   var triggerEvent = "touchstart"; //指定下载方式
   var blob = new Blob([""], { type: "application/octet-stream" }); //二进制大型对象blob
   var url = URL.createObjectURL(blob); //创建一个字符串路径空位
@@ -307,6 +315,104 @@ const downloadImg = () => {
   a.dispatchEvent(e);
   //释放一个已经存在的路径（有创建createObjectURL就要释放revokeObjectURL）
   URL.revokeObjectURL(url);
+};
+
+// 10.点击一块钱去水印，1.创建制作记录，2.查看图片支付状态
+const handlePay = () => {
+  createMake();
+  // if (typeof WeixinJSBridge == "undefined") {
+  //   if (document.addEventListener) {
+  //     console.log(11);
+  //     document.addEventListener("WeixinJSBridgeReady", onBridgeReady, false);
+  //   } else if (document.attachEvent) {
+  //     document.attachEvent("WeixinJSBridgeReady", onBridgeReady);
+  //     document.attachEvent("onWeixinJSBridgeReady", onBridgeReady);
+  //   }
+  // } else {
+  //   onBridgeReady();
+  // }
+};
+
+// 11.创建制作记录
+const createMake = async () => {
+  let obj = {
+    memberId: store.state.user.userObj.id,
+    url: gifUrl.value,
+    urlWm: gifObj.value.wmFileName,
+  };
+  return await createRecord(obj).then((res) => {
+    if (res.data.code == 200) {
+      //  保存uniqueId
+      gifObj.value.uniqueId = res.data.data;
+
+      // 查询图片支付状态
+      inquireImgPayStateFn();
+    }
+  });
+};
+
+// 12 查询图片支付状态
+const inquireImgPayStateFn = async () => {
+  let uniqueId = gifObj.value.uniqueId;
+  return await inquireImgPayState(uniqueId).then((res) => {
+    if (res.data.code == 200) {
+      gifObj.value.payState = res.data.data; // 0 未支付，1 已支付
+      // 未支付
+      if (res.data.data == 0) {
+        onBridgeReady();
+      } // 已支付;
+      else if (res.data.data == 1) {
+        payTrue();
+      }
+    }
+  });
+};
+
+// 13 已支付，查询已支付制作图片列表
+const payTrue = async () => {
+  let memberId = store.state.user.userObj.id;
+  return await inquireImgHavePaidState(memberId).then((res) => {
+    if (res.data.code == 200) {
+      console.log(res.data.data);
+    }
+    console.log(res);
+  });
+};
+
+// 14.1 未支付，微信支付
+function onBridgeReady() {
+  // 获取需要的参数
+  getWeChatPayParams();
+
+  // WeixinJSBridge.invoke(
+  //   "getBrandWCPayRequest",
+  //   {
+  //     appId: "wx2421b1c4370ec43b", //公众号ID，由商户传入
+  //     timeStamp: Date.now(), //时间戳，自1970年以来的秒数
+  //     nonceStr: "e61463f8efa94090b1f366cccfbbb444", //随机串
+  //     package: "prepay_id=u802345jgfjsdfgsdg888",
+  //     signType: "MD5", //微信签名方式：
+  //     paySign: "70EA570631E4BB79628FBCA90534C63FF7FADD89", //微信签名
+  //   },
+  //   function (res) {
+  //     if (res.err_msg == "get_brand_wcpay_request:ok") {
+  //       // 使用以上方式判断前端返回,微信团队郑重提示：
+  //       //res.err_msg将在用户支付成功后返回ok，但并不保证它绝对可靠。
+  //     }
+  //   }
+  // );
+}
+
+// 14.2 获取微信支付需要的参数
+const getWeChatPayParams = async () => {
+  let obj = {
+    mld: gifObj.value.uniqueId,
+    openId: store.state.user.userObj.id,
+  };
+  console.log(obj);
+  return await getJSAPIParams(obj).then((res) => {
+    console.log(res);
+  });
 };
 </script>
 
@@ -403,10 +509,9 @@ button {
       display: flex;
       justify-content: space-between;
       padding: 0 0.24rem 0.17rem 0.24rem;
-      border-radius: 0px 0px 0.12rem 0.12rem;
+      border-radius: 0 0 0.12rem 0.12rem;
       div {
         position: relative;
-        // clip-path: inset(0 0 round 5px);
         text-align: center;
         line-height: 0.44rem;
         width: 1.49rem;

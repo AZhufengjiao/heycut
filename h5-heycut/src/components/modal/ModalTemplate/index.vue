@@ -77,7 +77,7 @@ ul {
     width: 100%;
     height: 100%;
     background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(0px);
+    backdrop-filter: blur(0);
   }
 
   // 弹出框盒子部分
@@ -134,14 +134,14 @@ ul {
     width: 4.33rem;
     height: 2.45rem;
     background: red;
-    box-shadow: 0px 0.04rem 0.12rem 0px rgba(0, 0, 0, 0.2);
-    border-radius:0.04rem ;
+    box-shadow: 0 0.04rem 0.12rem 0 rgba(0, 0, 0, 0.2);
+    border-radius: 0.04rem;
     // 退出按钮
     .exitBtn {
       position: absolute;
       top: 0;
       right: 0;
-      font-size: 0.14rem
+      font-size: 0.14rem;
     }
   }
 }
