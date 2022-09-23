@@ -14,7 +14,7 @@
           style="display: flex; justify-content: center; align-items: center"
         >
           <div>
-            <van-loading style="margin-right: 0.08rem" color="#fff" size="22" />
+            <van-loading style="margin-right: 0.08rem" color="#fff" size="40" />
           </div>
           视频处理中
         </div>
@@ -38,7 +38,15 @@
       ></video>
     </div>
 
-    <div class="video-box" v-show="videoPlayFlag == true">
+    <video
+      :src="videoUrl"
+      ref="videoDom"
+      :style="{ height: '100px', width: '100%' }"
+      @canplaythrough="myFunction"
+    ></video>
+
+    <!-- v-show="videoPlayFlag == true" -->
+    <div style="opacity: 0" class="video-box">
       <!-- 视频播放 -->
       <div ref="v" class="video-plugIn">
         <vue3VideoPlay
@@ -73,11 +81,51 @@
             <span></span>
           </div>
         </div>
+        <ul>
+          <li v-for="item in videoFrameList" :key="item">
+            <img style="zoom: 100%" :src="item" alt="" />
+          </li>
+        </ul>
       </div>
 
       <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
       <button @click="handleCreateBtn">生成GIF</button>
       <canvas style="display: none" id="myCanvas"></canvas>
+    </div>
+
+    <!-- 滑动画面  -->
+    <div class="slide-module" :style="{ marginTop: marginTop }">
+      <ul class="ul-top">
+        <li class="liBlock">
+          <h1>如何使用</h1>
+          <div class="li-box">
+            <!-- 左 -->
+            <div class="box-img"><img src="" alt="" /></div>
+            <!-- 右 -->
+            <div class="sidebar">
+              <div>
+                <h2>Stp 01</h2>
+                <p>只需三步，1分钟将视频转为GIF</p>
+              </div>
+              <div>
+                <h2>Stp 02</h2>
+                <p>只需三步，1分钟将视频转为GIF</p>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li></li>
+        <li></li>
+      </ul>
+
+      <!-- 下面的点 -->
+      <div class="foolter">
+        <ul class="ul-dot">
+          <li class="li-dot-bj"></li>
+          <li></li>
+          <li></li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
@@ -113,6 +161,7 @@ let videoFrameList = ref([]);
 let videoPlayFlag = ref(null);
 // 视频每一帧定时器
 let timers = ref(null);
+let marginTop = ref("-3.2rem");
 
 // 视频截至时间                     ----- 视频剪辑插件
 let endTime = ref(null);
@@ -168,7 +217,7 @@ const options = reactive({
     "fullScreen",
   ], //显示所有按钮,
 });
-// 1.2 获取视频时间 视频数据加载完成
+// 1.2 获取视频时间 视频数据加载完成, 可以正常播放且无需停顿和缓冲时触发
 const getVideoDate = (e) => {
   let resizeDragDom = document.querySelector(".resize-drag");
   // 视频时长
@@ -178,6 +227,9 @@ const getVideoDate = (e) => {
 
   // 获取截取宽度播放终点时间=总时长/总宽度*截取视频宽度
   endTime.value = (videoTime.value / 325) * terminuWidth;
+
+  // 视频能播放
+  videoPlayFlag.value = true;
 
   if (flag.value) {
     // 视频总数
@@ -194,12 +246,24 @@ const getVideoDate = (e) => {
       }
     }
     sum(time);
-    console.log(arr);
 
-    function fn(item) {
-      return new Promise((resolve, reject) => {
-        // setTimeout(() => {
-        document.getElementById("dPlayerVideoMain").currentTime = item;
+    let num2 = 0;
+    function fn() {
+      if (num2 >= arr.length) {
+        document.querySelector(".video-box").style.opacity = 1;
+        marginTop.value = 0;
+        // 修改样式 ***
+        store.commit("star/setImgTwo", false);
+        // 修改i的样式
+        document.querySelectorAll(".i").forEach((item) => {
+          item.style.background = "#836ffa";
+        });
+        return;
+      } else {
+        let video = document.getElementById("dPlayerVideoMain");
+        video.currentTime = arr[num2];
+        video.play();
+        video.controls = "controls";
         let videoDom = document.getElementById("dPlayerVideoMain");
         let canvas = document.getElementById("myCanvas");
         canvas.width = videoDom.videoWidth;
@@ -207,62 +271,18 @@ const getVideoDate = (e) => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
         let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
-        console.log(dataURL);
-        // videoFrameList.value.push(dataURL);
 
-        if (resolve) {
-          return true;
-        } else {
-          return false;
-        }
-        // }, 100);
-      });
+        canvas.width = 0;
+
+        videoFrameList.value.push(dataURL);
+
+        num2 += 1;
+
+        return setTimeout(() => fn(), 20);
+      }
     }
+    fn();
 
-    arr.map((item) => {
-      fn(item);
-    });
-
-    // fn(arr[0])
-    //   .then(() => {
-    //     fn(arr[1]);
-    //   })
-    //   .then(() => {
-    //     fn(arr[2]);
-    //   })
-    //   .then(() => {
-    //     fn(arr[3]);
-    //   })
-    //   .then(() => {
-    //     fn(arr[4]);
-    //   })
-    //   .then(() => {
-    //     fn(arr[5]);
-    //   })
-    //   .then(() => {
-    //     fn(arr[6]);
-    //   });
-
-    // 开启定时器
-    // timers.value = window.setInterval(() => {
-    //   ++num;
-    //   let videoDom = document.getElementById("dPlayerVideoMain");
-    //   let canvas = document.getElementById("myCanvas");
-    //   canvas.width = videoDom.videoWidth;
-    //   canvas.height = videoDom.videoHeight;
-    //   var ctx = canvas.getContext("2d");
-    //   ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
-    //   let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
-
-    //   if (num >= time) {
-    //     clearInterval(timers.value);
-    //   }
-
-    //   videoFrameList.value.push(dataURL);
-    //   // console.log(time, num);
-    //   // console.log(dataURL);
-    // }, 20);
-    // console.log(videoFrameList.value[2]);
     flag.value = false;
   }
 };
@@ -293,7 +313,13 @@ const handleseeking = (e) => {
 };
 
 // 1.4 视频播放错误
-const handleVideoError = (e) => {};
+const handleVideoError = (e) => {
+  console.log(111, e);
+};
+
+// const handleCanplaythrough = (e) => {
+//   console.log(999, e);
+// };
 
 // 1.5 可播放监听事件，当浏览器能够开始播放指定的音频/视频时触发
 const onCanplay = (e) => {
@@ -374,7 +400,6 @@ interact(".resize-drag")
         target.setAttribute("data-y", y);
         dragX.value = x;
 
-        console.log(sanshi, videoTime.value);
         // 改变宽高，触发事件
         dragFn(1000);
       },
@@ -521,6 +546,17 @@ const handleCreateBtn = () => {
     font-family: AlimamaShuHeiTi;
     color: #fff;
     line-height: 0.16rem;
+    ::v-deep .van-loading__spinner {
+      color: rgb(255, 255, 255);
+      font-size: 0.24rem !important;
+      width: 0.24rem !important;
+      height: 0.24rem !important;
+      .van-loading__circular {
+        circle {
+          stroke-width: 4;
+        }
+      }
+    }
   }
 }
 
@@ -583,16 +619,21 @@ const handleCreateBtn = () => {
         background: #fff;
       }
     }
-    // .drag::after {
-    //   background: green;
-    //   width: 11px;
-    //   height: 100%;
-    //   position: absolute;
-    //   right: -12px;
-    //   content: "";
-    //   display: block;
-    //   clear: both;
-    // }
+
+    ul {
+      position: absolute;
+      top: 0.05rem;
+      left: 0;
+      display: flex;
+      li {
+        width: 51px;
+        height: 46px;
+        img {
+          width: 100%;
+          height: 100%;
+        }
+      }
+    }
   }
   h1 {
     margin-top: 0.08rem;
@@ -628,5 +669,91 @@ const handleCreateBtn = () => {
   font-family: sans-serif;
   touch-action: none;
   box-sizing: border-box;
+  z-index: 20;
+}
+
+.slide-module {
+  margin-bottom: 0.32rem;
+  width: 100%;
+  // margin-top: -3.2rem;
+  .ul-top {
+    width: 100%;
+    li {
+      display: none;
+      h1 {
+        margin-bottom: 0.2rem;
+        font-weight: 600;
+        text-align: center;
+        font-size: 0.18rem;
+        font-family: AlimamaShuHeiTi;
+        color: #020202;
+      }
+
+      //  下面盒子
+      .li-box {
+        margin-bottom: 0.25rem;
+        width: 100%;
+        display: flex;
+        // 左边img
+        .box-img {
+          margin-right: 0.12rem;
+          width: 1.95rem;
+          height: 1.17rem;
+          border-radius: 0.09rem;
+          background: #045dfe;
+          overflow: hidden;
+          img {
+            width: 100%;
+            height: 100%;
+          }
+        }
+        // 右边
+        .sidebar {
+          text-align: left;
+          width: 1.45rem;
+          div:first-child {
+            margin-bottom: 0.16rem;
+          }
+          div {
+            padding-top: 0.05rem;
+            font-size: 0.12rem;
+            color: #121212;
+            line-height: 0.12rem;
+            h2 {
+              height: 0.12rem;
+              margin-bottom: 0.07rem;
+              font-family: HarmonyOS_Sans_SC_Bold;
+              font-weight: 600;
+            }
+            p {
+              height: 0.24rem;
+              font-family: HarmonyOS_Sans_SC;
+            }
+          }
+        }
+      }
+    }
+    .liBlock {
+      display: block;
+    }
+  }
+  // 下面的点
+  .foolter {
+    display: flex;
+    justify-content: center;
+    .ul-dot {
+      display: flex;
+      li {
+        margin: 0 0.02rem;
+        width: 0.06rem;
+        height: 0.06rem;
+        background: #d4dae5;
+        border-radius: 50%;
+      }
+      .li-dot-bj {
+        background: #005dfe;
+      }
+    }
+  }
 }
 </style>
