@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="overflow: hidden">
     <!-- 点击上传虚线组件 -->
     <div class="click-upload" v-if="videoPlayFlag == 1 || videoPlayFlag == 2">
       <button @click="handleUpLoading">
@@ -59,6 +59,7 @@
       <!-- 拖拽 -->
       <div class="video-cut-out">
         <div class="resize-drag">
+          <!-- 左 -->
           <div
             class="drag-left"
             @touchstart="handleDownLeft"
@@ -67,6 +68,7 @@
           >
             <span></span>
           </div>
+          <!-- 右 -->
           <div
             class="drag-right"
             @touchstart="handleDownRight"
@@ -75,12 +77,15 @@
           >
             <span></span>
           </div>
+          <!-- 中 -->
+          <div class="progressBar"></div>
         </div>
         <ul>
           <li v-for="item in videoFrameList" :key="item">
             <img style="zoom: 100%" :src="item" alt="" />
           </li>
         </ul>
+        <div class="maskLayer"></div>
       </div>
 
       <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
@@ -133,7 +138,6 @@ import interact from "interactjs";
 import GIF from "../../../static/gif.js";
 import { getGifWorker } from "../../../static/gif.worker.js";
 import { useStore } from "vuex";
-import MP4Box from "mp4box";
 component: {
   videoPlay;
 }
@@ -228,14 +232,14 @@ const getVideoDate = (e) => {
 
   if (flag.value) {
     // 视频总数
-    let time = videoTime.value / 7;
+    let time = Math.floor(videoTime.value / 7);
     let arr = [];
     let num = 0;
     function sum(time) {
       if (num + time > videoTime.value) {
         return arr;
       } else {
-        num += time;
+        num = time + num;
         arr.push(num);
         return sum(time);
       }
@@ -289,13 +293,6 @@ const getVideoDate2 = (e) => {
 
 // 视频开始播放
 const onPlay = (e) => {
-  const mp4boxFile = MP4Box.createFile();
-  const reader = new FileReader();
-  reader.readAsArrayBuffer(file.value);
-
-  mp4boxFile.onReady = function (info) {
-    console.log(info);
-  };
   // 可以播放
   if (e) {
     // videoPlayFlag.value = true;
@@ -304,6 +301,7 @@ const onPlay = (e) => {
 
 // 1.3 视频时长更新
 const handleseeking = (e) => {
+  // 功能一  实时更新video的结尾时间
   // 重新赋值结束时间
   endTime.value =
     (videoTime.value / 325) *
@@ -314,6 +312,11 @@ const handleseeking = (e) => {
     document.querySelector("#dPlayerVideoMain").currentTime =
       (videoTime.value / 325) * dragX.value;
   }
+
+  // 功能二  实时更新进度条的位置
+  // 获取每秒占盒子多宽
+  let time = 335 / videoTime.value;
+  document.querySelector(".progressBar").style.left = time * currentTime + "px";
 };
 
 // 1.4 视频播放错误
@@ -469,6 +472,7 @@ const dragFn = (date) => {
       return;
     } else {
       timer = window.setTimeout(() => {
+        // document.querySelector(".progressBar").style.left = "50%";
         // 判断拖拽插件x轴的水平位置 小于0就让等于0
         if (dragX.value <= 0) {
           dragX.value = 0;
@@ -522,6 +526,71 @@ function dragMoveListener(event) {
 }
 // this function is used later in the resizing and gesture demos
 window.dragMoveListener = dragMoveListener;
+
+// 2.4.1 按下 点击拖动框左边按钮，让视频和进度条在最左侧
+const handleDownLeft = () => {
+  // 左按钮DOM
+  let left = document.querySelector(".drag-left");
+  // video DOM
+  let video = document.querySelector("#dPlayerVideoMain");
+  video.pause();
+
+  // 盒子拖动事件
+  left.ontouchmove = () => {
+    video.pause();
+    // 整个拖动的盒子
+    let resizeDragDom = document.querySelector(".resize-drag");
+
+    // 设置视频播放的时间
+    video.currentTime =
+      (videoTime.value / 325) *
+      resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+
+    // 设置进度条
+    document.querySelector(".progressBar").style.left = 0;
+    video.pause();
+  };
+};
+// 2.4.2 抬起
+const mouseUpLeft = () => {
+  let left = document.querySelector(".drag-left");
+  left.ontouchmove = null;
+};
+
+// 2.5.1 按下 点击拖动框右边按钮，让视频和进度条在最右侧
+const handleDownRight = () => {
+  // 右按钮
+  let right = document.querySelector(".drag-right");
+  // video DOM
+  let video = document.querySelector("#dPlayerVideoMain");
+  // 让video不播放
+  video.pause();
+
+  // 盒子拖动事件
+  right.ontouchmove = () => {
+    // 让video不播放
+    video.pause();
+    // 整个拖动的盒子
+    let resizeDragDom = document.querySelector(".resize-drag");
+
+    // 设置视频播放的时间
+    video.currentTime =
+      (videoTime.value / 325) *
+      (resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0] +
+        resizeDragDom.clientWidth);
+
+    // 设置进度条
+    document.querySelector(".progressBar").style.left =
+      resizeDragDom.clientWidth + "px";
+    // 让video不播放
+    video.pause();
+  };
+};
+// 2.5.2 抬起
+const mouseUpRight = () => {
+  let right = document.querySelector(".drag-right");
+  right.ontouchmove = null;
+};
 
 // 3.1 点击生成按钮
 const handleCreateBtn = () => {
@@ -647,11 +716,21 @@ const checkVideoCode = async (file) => {
         background: #fff;
       }
     }
-
+    // 遮罩层
+    .maskLayer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      z-index: -1;
+    }
     ul {
       position: absolute;
+      width: 92%;
       top: 0.05rem;
-      left: 0;
+      left: 0.14rem;
       display: flex;
       li {
         width: 51px;
@@ -698,6 +777,15 @@ const checkVideoCode = async (file) => {
   touch-action: none;
   box-sizing: border-box;
   z-index: 20;
+  .progressBar {
+    position: absolute;
+    top: -0.07rem;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 0.02rem;
+    height: 0.62rem;
+    background: #0dbc79;
+  }
 }
 
 .slide-module {

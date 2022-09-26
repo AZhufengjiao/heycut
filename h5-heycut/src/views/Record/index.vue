@@ -48,6 +48,7 @@ import { useStore } from "vuex";
 component: {
   Nav, Title;
 }
+const store = useStore();
 
 onMounted(() => {
   //是否是微信浏览器
@@ -57,7 +58,7 @@ onMounted(() => {
       /(WindowsWechat)/i.test(navigator.userAgent) ||
       /(wechatdevtools)/i.test(navigator.userAgent)
     ) {
-      alert("电脑微信或者微信开发者工具");
+      console.log("电脑微信或者微信开发者工具");
     } else {
       //手机微信打开的浏览器
       console.log("手机微信");

@@ -69,24 +69,24 @@ const voluntarilyLoginHandle = async () => {
 };
 // 微信登录
 const WeChatLoginHandle = async () => {
-  // const redirectURL = encodeURIComponent(window.location.href);
-  // const wechatId = "wx848239f71a9bae68";
-  // const redirectURI =
-  //   "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" +
-  //   wechatId +
-  //   "&redirect_uri=" +
-  //   redirectURL +
-  //   "&response_type=code&scope=snsapi_userinfo&state=&connect_redirect=1#wechat_redirect";
+  const redirectURL = encodeURIComponent(window.location.href);
+  const wechatId = "wx848239f71a9bae68";
+  const redirectURI =
+    "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" +
+    wechatId +
+    "&redirect_uri=" +
+    redirectURL +
+    "&response_type=code&scope=snsapi_userinfo&state=&connect_redirect=1#wechat_redirect";
   // window.location.href = redirectURI;
 
-  // console.log(window.location);
+  console.log(window.location.search);
 
-  return await WeChatLogin().then((res) => {
-    if (res.data.code == 200) {
-      console.log(res.data.data);
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
+  // return await WeChatLogin().then((res) => {
+  //   if (res.data.code == 200) {
+  //     console.log(res.data.data);
+  //     store.commit("user/setUserObj", res.data.data);
+  //   }
+  // });
 };
 </script>
 

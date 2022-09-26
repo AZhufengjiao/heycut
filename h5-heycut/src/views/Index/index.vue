@@ -45,7 +45,7 @@ onMounted(() => {
       /(WindowsWechat)/i.test(navigator.userAgent) ||
       /(wechatdevtools)/i.test(navigator.userAgent)
     ) {
-      alert("电脑微信或者微信开发者工具");
+      console.log("电脑微信或者微信开发者工具");
     } else {
       //手机微信打开的浏览器
       console.log("手机微信");
@@ -61,7 +61,7 @@ onMounted(() => {
 const voluntarilyLoginHandle = async () => {
   return await voluntarilyLogin().then((res) => {
     if (res.data.code == 200) {
-      store.commit("user/setUserObj",res.data.data);
+      store.commit("user/setUserObj", res.data.data);
     }
   });
 };
@@ -69,7 +69,7 @@ const voluntarilyLoginHandle = async () => {
 const WeChatLoginHandle = async () => {
   return await WeChatLogin().then((res) => {
     if (res.data.code == 200) {
-      store.commit("user/setUserObj",res.data.data);
+      store.commit("user/setUserObj", res.data.data);
     }
   });
 };

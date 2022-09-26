@@ -3,7 +3,7 @@
     <!-- 左边 -->
     <div class="nav-left">
       <img src="" alt="" />
-      <span>SOOGIF</span>
+      <span @click="handle">SOOGIF</span>
     </div>
     <!-- 右边 -->
     <div class="nav-right">
@@ -12,7 +12,11 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+const handle = () => {
+  console.log(123);
+};
+</script>
 
 <style lang="less" scoped>
 // @import url("@/assets/css/nav/nav-375px.less");

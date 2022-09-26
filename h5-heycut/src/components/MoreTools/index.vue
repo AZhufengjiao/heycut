@@ -3,24 +3,16 @@
   <div class="more-tools">
     <h1>更多工具</h1>
     <ul>
-      <li
-        @click="
-          $router.push('/');
-          handle;
-        "
-      >
-        表情制作
-      </li>
-      <li @click="$router.push('/compress')">123123</li>
+      <li @click="$router.push('/')">表情制作</li>
+      <li @click="$router.push('/compress')">表情制作</li>
       <li @click="$router.push('/record')">表情制作</li>
     </ul>
   </div>
 </template>
 
 <script setup>
-const handle = () => {
-  console.log(123);
-};
+import { onMounted } from "vue";
+
 </script>
 
 <style lang="less" scoped>
