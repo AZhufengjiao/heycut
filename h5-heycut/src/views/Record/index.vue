@@ -42,7 +42,7 @@
 import Nav from "@/components/Nav/index.vue"; // 顶部导航组件
 import Title from "@/components/Title/index.vue"; // 标题组件
 // 接口
-import { voluntarilyLogin, WeChatLogin } from "@/api/login.js";
+import { voluntarilyLogin, WeChatLogin, lookLoginInfo } from "@/api/login.js";
 import { onMounted, ref } from "vue";
 import { useStore } from "vuex";
 component: {
@@ -51,23 +51,8 @@ component: {
 const store = useStore();
 
 onMounted(() => {
-  //是否是微信浏览器
-  if (/(micromessenger)/i.test(navigator.userAgent)) {
-    //是否电脑微信或者微信开发者工具
-    if (
-      /(WindowsWechat)/i.test(navigator.userAgent) ||
-      /(wechatdevtools)/i.test(navigator.userAgent)
-    ) {
-      console.log("电脑微信或者微信开发者工具");
-    } else {
-      //手机微信打开的浏览器
-      console.log("手机微信");
-      WeChatLoginHandle();
-    }
-  } else {
-    console.log("其他浏览器");
-    voluntarilyLoginHandle();
-  }
+  // 查看是否登陆，没登陆就登陆
+  lookLogin();
 });
 
 // 自动登录
@@ -83,6 +68,34 @@ const WeChatLoginHandle = async () => {
   return await WeChatLogin().then((res) => {
     if (res.data.code == 200) {
       store.commit("user/setUserObj", res.data.data);
+    }
+  });
+};
+
+// 判断是否登陆
+const lookLogin = async () => {
+  let Id = store.state.user.userObj.id;
+  return await lookLoginInfo(Id).then((res) => {
+    if (res.data.code == 200) {
+      console.log("已登陆");
+    } else if (res.data.code == 201) {
+      //是否是微信浏览器
+      if (/(micromessenger)/i.test(navigator.userAgent)) {
+        //是否电脑微信或者微信开发者工具
+        if (
+          /(WindowsWechat)/i.test(navigator.userAgent) ||
+          /(wechatdevtools)/i.test(navigator.userAgent)
+        ) {
+          console.log("电脑微信或者微信开发者工具");
+        } else {
+          //手机微信打开的浏览器
+          console.log("手机微信");
+          WeChatLoginHandle();
+        }
+      } else {
+        console.log("其他浏览器");
+        voluntarilyLoginHandle();
+      }
     }
   });
 };

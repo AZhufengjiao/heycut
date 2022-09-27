@@ -44,6 +44,14 @@
     <div style="opacity: 0" class="video-box">
       <!-- 视频播放 -->
       <div ref="v" class="video-plugIn">
+        <!-- <video
+          ref="videoDom"
+          controls
+          autoplay
+          :src="videoUrl"
+          @canplaythrough="getVideoDate2"
+          :style="{ width: '100%', height: '1.66rem' }"
+        ></video> -->
         <vue3VideoPlay
           v-if="videoUrl !== null"
           v-bind="options"
@@ -53,6 +61,7 @@
           @timeupdate="handleseeking"
           @error="handleVideoError"
           @canplay="onCanplay"
+          @seeking="handleSeeking"
         />
       </div>
       <!-- 拖拽 -->
@@ -85,7 +94,8 @@
             <img style="zoom: 100%" :src="item" alt="" />
           </li>
         </ul>
-        <div class="maskLayer"></div>
+        <div class="maskLayerLeft"></div>
+        <div class="maskLayerRight"></div>
       </div>
 
       <h1 @touchstart="handleDown">拖动边框选择截取需要部分</h1>
@@ -174,7 +184,8 @@ let dragX = ref(null);
 var animationId = ref(null);
 // flag
 let flag = ref(true);
-
+// 视频自动播放flag
+let videoFlag = ref(false);
 // 点击上传视频
 const handleUpLoading = () => {
   uploadDom.value.click();
@@ -201,6 +212,7 @@ const options = reactive({
   src: videoUrl, //视频源
   muted: false, //静音
   webFullScreen: false,
+
   speedRate: ["0.75", "1.0", "1.25", "1.5", "2.0"], //播放倍速
   autoPlay: false, //自动播放
   loop: false, //循环播放
@@ -232,7 +244,7 @@ const getVideoDate = (e) => {
 
   if (flag.value) {
     // 视频总数
-    let time = Math.floor(videoTime.value / 7);
+    let time = Math.floor(parseInt(videoTime.value) / 7);
     let arr = [];
     let num = 0;
     function sum(time) {
@@ -249,8 +261,13 @@ const getVideoDate = (e) => {
     let num2 = 0;
     function fn() {
       if (num2 >= arr.length) {
+        // 让播放位置回到起点
+        document.getElementById("dPlayerVideoMain").currentTime = 0;
+        // 让视频自动播放
+        videoFlag.value = true;
         // 视频能播放
-        videoPlayFlag.value = 3;
+        videoPlayFlag.value = 3; // 拖动时设置遮罩层
+
         document.querySelector(".video-box").style.opacity = 1;
         marginTop.value = 0;
         // 修改样式 ***
@@ -259,6 +276,7 @@ const getVideoDate = (e) => {
         document.querySelectorAll(".i").forEach((item) => {
           item.style.background = "#836ffa";
         });
+
         return;
       } else {
         let video = document.getElementById("dPlayerVideoMain");
@@ -287,15 +305,17 @@ const getVideoDate = (e) => {
     flag.value = false;
   }
 };
-const getVideoDate2 = (e) => {
-  // console.log(e);
-};
 
 // 视频开始播放
 const onPlay = (e) => {
   // 可以播放
   if (e) {
-    // videoPlayFlag.value = true;
+    // console.log(document.querySelector(".resize-drag").style.width);
+    // document.querySelector(".maskLayerRight").style.width =
+    //   355 -
+    //   14 -
+    //   parseInt(document.querySelector(".resize-drag").style.width) +
+    //   "px";
   }
 };
 
@@ -308,15 +328,47 @@ const handleseeking = (e) => {
     (dragX.value + document.querySelector(".resize-drag").clientWidth);
   // 视频播放时间
   let currentTime = document.querySelector("#dPlayerVideoMain").currentTime;
-  if (currentTime >= endTime.value) {
+  // 整个拖动的盒子
+  let resizeDragDom = document.querySelector(".resize-drag");
+  // 如果是自动播放就回到起点，不是自动播放就停在原地
+  if (currentTime >= endTime.value && videoFlag.value == true) {
     document.querySelector("#dPlayerVideoMain").currentTime =
       (videoTime.value / 325) * dragX.value;
+  } else if (currentTime >= endTime.value && videoFlag.value == false) {
+    // 盒子移动
+    if (resizeDragDom.style.transform) {
+      document.querySelector("#dPlayerVideoMain").currentTime =
+        (videoTime.value / 325) *
+        (resizeDragDom.style.transform
+          .split("(")[1]
+          .split(",")[0]
+          .split("p")[0] +
+          document.querySelector(".resize-drag").clientWidth);
+    } else {
+      document.querySelector("#dPlayerVideoMain").currentTime =
+        (videoTime.value / 325) *
+        document.querySelector(".resize-drag").clientWidth;
+    }
   }
 
   // 功能二  实时更新进度条的位置
   // 获取每秒占盒子多宽
   let time = 335 / videoTime.value;
-  document.querySelector(".progressBar").style.left = time * currentTime + "px";
+  let width = document.querySelector(".resize-drag").clientWidth;
+  if (videoFlag.value) {
+    if (resizeDragDom.style.transform) {
+      document.querySelector(".progressBar").style.left =
+        time * document.querySelector("#dPlayerVideoMain").currentTime -
+        resizeDragDom.style.transform
+          .split("(")[1]
+          .split(",")[0]
+          .split("p")[0] +
+        "px";
+    } else {
+      document.querySelector(".progressBar").style.left =
+        time * document.querySelector("#dPlayerVideoMain").currentTime + "px";
+    }
+  }
 };
 
 // 1.4 视频播放错误
@@ -329,14 +381,11 @@ const handleVideoError = (e) => {
   }
 };
 
-// const handleCanplaythrough = (e) => {
-//   console.log(999, e);
-// };
-
 // 1.5 可播放监听事件，当浏览器能够开始播放指定的音频/视频时触发
 const onCanplay = (e) => {
   // 判断是否点击生成按钮，点了开启定时器获取视频帧
   if (videoGifFlag.value) {
+    console.log(111);
     let gif = new GIF({
       workers: 2,
       quality: 10,
@@ -379,6 +428,18 @@ const onCanplay = (e) => {
   }
 };
 
+// 时长变化。当指定的音频/视频的时长数据发生变化时触发，
+const handleSeeking = (e) => {
+  // video DOM
+  let video = document.querySelector("#dPlayerVideoMain");
+  video.pause();
+
+  // video.addEventListener("pause", function (e) {
+  //   console.log("暂停播放");
+  //   console.log(e);
+  // });
+};
+
 // 2.1 视频剪辑插件
 interact(".resize-drag")
   .resizable({
@@ -412,6 +473,15 @@ interact(".resize-drag")
         target.setAttribute("data-y", y);
         dragX.value = x;
 
+        // 拖动时设置遮罩层
+        document.querySelector(".maskLayerLeft").style.width = x - 14 + "px";
+        document.querySelector(".maskLayerRight").style.width =
+          355 -
+          x -
+          14 -
+          parseInt(document.querySelector(".resize-drag").style.width) +
+          1 +
+          "px";
         // 改变宽高，触发事件
         dragFn(1000);
       },
@@ -463,6 +533,7 @@ interact(".resize-drag")
       },
     },
   });
+
 // 节流
 let timer = null;
 // 2.2 拖动改变宽高，触发事件并节流
@@ -472,7 +543,6 @@ const dragFn = (date) => {
       return;
     } else {
       timer = window.setTimeout(() => {
-        // document.querySelector(".progressBar").style.left = "50%";
         // 判断拖拽插件x轴的水平位置 小于0就让等于0
         if (dragX.value <= 0) {
           dragX.value = 0;
@@ -503,6 +573,13 @@ const dragFn = (date) => {
 
 // 2.3 视频剪辑器拖动事件
 function dragMoveListener(event) {
+  // video DOM
+  let video = document.querySelector("#dPlayerVideoMain");
+  // 整个拖动的盒子
+  let resizeDragDom = document.querySelector(".resize-drag");
+  video.pause();
+  document.querySelector(".progressBar").style.left = "50%";
+
   var target = event.target;
   // keep the dragged position in the data-x/data-y attributes
   var x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
@@ -523,12 +600,24 @@ function dragMoveListener(event) {
   endTime.value =
     (videoTime.value / 325) *
     (document.querySelector(".resize-drag").clientWidth + dragX.value);
+
+  // 设置视频播放的时间
+  video.currentTime =
+    (videoTime.value / 325) *
+    (parseInt(
+      resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0]
+    ) +
+      parseInt(resizeDragDom.clientWidth / 2));
+
+  video.pause();
 }
 // this function is used later in the resizing and gesture demos
 window.dragMoveListener = dragMoveListener;
 
 // 2.4.1 按下 点击拖动框左边按钮，让视频和进度条在最左侧
 const handleDownLeft = () => {
+  // 取消自动播放
+  videoFlag.value = false;
   // 左按钮DOM
   let left = document.querySelector(".drag-left");
   // video DOM
@@ -542,9 +631,9 @@ const handleDownLeft = () => {
     let resizeDragDom = document.querySelector(".resize-drag");
 
     // 设置视频播放的时间
-    video.currentTime =
-      (videoTime.value / 325) *
-      resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+    // video.currentTime =
+    //   (videoTime.value / 325) *
+    //   resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
 
     // 设置进度条
     document.querySelector(".progressBar").style.left = 0;
@@ -553,12 +642,21 @@ const handleDownLeft = () => {
 };
 // 2.4.2 抬起
 const mouseUpLeft = () => {
+  // 开启自动播放
+
+  // setTimeout(() => {
+  videoFlag.value = true;
+  // }, 1000);
+
   let left = document.querySelector(".drag-left");
   left.ontouchmove = null;
 };
 
 // 2.5.1 按下 点击拖动框右边按钮，让视频和进度条在最右侧
 const handleDownRight = () => {
+  // 取消自动播放
+  videoFlag.value = false;
+
   // 右按钮
   let right = document.querySelector(".drag-right");
   // video DOM
@@ -572,12 +670,14 @@ const handleDownRight = () => {
     video.pause();
     // 整个拖动的盒子
     let resizeDragDom = document.querySelector(".resize-drag");
-
     // 设置视频播放的时间
     video.currentTime =
       (videoTime.value / 325) *
-      (resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0] +
-        resizeDragDom.clientWidth);
+      (parseInt(
+        resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0]
+      ) +
+        parseInt(resizeDragDom.clientWidth));
+    // video.currentTime = resizeDragDom.clientWidth * (videoTime.value / 325);
 
     // 设置进度条
     document.querySelector(".progressBar").style.left =
@@ -588,8 +688,22 @@ const handleDownRight = () => {
 };
 // 2.5.2 抬起
 const mouseUpRight = () => {
+  // 开启自动播放
+
+  // setTimeout(() => {
+  videoFlag.value = true;
+  // }, 1000);
+
   let right = document.querySelector(".drag-right");
   right.ontouchmove = null;
+
+  // 整个拖动的盒子
+  let resizeDragDom = document.querySelector(".resize-drag");
+  // video DOM
+  let video = document.querySelector("#dPlayerVideoMain");
+  video.currentTime =
+    (videoTime.value / 325) *
+    resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
 };
 
 // 3.1 点击生成按钮
@@ -600,6 +714,7 @@ const handleCreateBtn = () => {
   videoGifFlag.value = true;
 };
 
+// mp4boxFile 测试
 const checkVideoCode = async (file) => {
   return new Promise((resolve, reject) => {
     const mp4boxFile = MP4Box.createFile();
@@ -717,14 +832,23 @@ const checkVideoCode = async (file) => {
       }
     }
     // 遮罩层
-    .maskLayer {
+    .maskLayerRight {
       position: absolute;
-      top: 0;
-      right: 0;
-      width: 100%;
-      height: 100%;
+      top: 4px;
+      right: 13px;
+      width: 0.2rem;
+      // width: 0;
+      height: 86%;
       background: rgba(0, 0, 0, 0.2);
-      z-index: -1;
+      // background: rgba(red);
+    }
+    .maskLayerLeft {
+      position: absolute;
+      top: 4px;
+      left: 13px;
+      width: 0;
+      height: 86%;
+      background: rgba(0, 0, 0, 0.2);
     }
     ul {
       position: absolute;
