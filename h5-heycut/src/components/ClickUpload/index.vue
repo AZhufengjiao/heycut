@@ -180,8 +180,7 @@ let endTime = ref(null);
 let startTime = ref(0);
 // 拖拽的x轴位置
 let dragX = ref(null);
-// 定时器  //用来赋值requestAnimationFrame的id，为之后取消它做准备
-var animationId = ref(null);
+
 // flag
 let flag = ref(true);
 // 视频自动播放flag
@@ -310,55 +309,49 @@ const getVideoDate = (e) => {
 const onPlay = (e) => {
   // 可以播放
   if (e) {
-    // console.log(document.querySelector(".resize-drag").style.width);
-    // document.querySelector(".maskLayerRight").style.width =
-    //   355 -
-    //   14 -
-    //   parseInt(document.querySelector(".resize-drag").style.width) +
-    //   "px";
   }
 };
 
 // 1.3 视频时长更新
 const handleseeking = (e) => {
-  // 功能一  实时更新video的结尾时间
-  // 重新赋值结束时间
-  endTime.value =
-    (videoTime.value / 325) *
-    (dragX.value + document.querySelector(".resize-drag").clientWidth);
   // 视频播放时间
   let currentTime = document.querySelector("#dPlayerVideoMain").currentTime;
   // 整个拖动的盒子
   let resizeDragDom = document.querySelector(".resize-drag");
+  // video DOM
+  let videoDom = document.querySelector("#dPlayerVideoMain");
+  // 功能一  实时更新video的结尾时间
+  // 重新赋值结束时间
+  endTime.value =
+    (videoTime.value / 325) * (dragX.value + resizeDragDom.clientWidth);
+
   // 如果是自动播放就回到起点，不是自动播放就停在原地
   if (currentTime >= endTime.value && videoFlag.value == true) {
-    document.querySelector("#dPlayerVideoMain").currentTime =
-      (videoTime.value / 325) * dragX.value;
+    videoDom.currentTime = (videoTime.value / 325) * dragX.value;
   } else if (currentTime >= endTime.value && videoFlag.value == false) {
     // 盒子移动
     if (resizeDragDom.style.transform) {
-      document.querySelector("#dPlayerVideoMain").currentTime =
+      videoDom.currentTime =
         (videoTime.value / 325) *
         (resizeDragDom.style.transform
           .split("(")[1]
           .split(",")[0]
           .split("p")[0] +
-          document.querySelector(".resize-drag").clientWidth);
+          resizeDragDom.clientWidth);
     } else {
-      document.querySelector("#dPlayerVideoMain").currentTime =
-        (videoTime.value / 325) *
-        document.querySelector(".resize-drag").clientWidth;
+      videoDom.currentTime =
+        (videoTime.value / 325) * resizeDragDom.clientWidth;
     }
   }
 
   // 功能二  实时更新进度条的位置
   // 获取每秒占盒子多宽
   let time = 335 / videoTime.value;
-  let width = document.querySelector(".resize-drag").clientWidth;
+  let width = resizeDragDom.clientWidth;
   if (videoFlag.value) {
     if (resizeDragDom.style.transform) {
       document.querySelector(".progressBar").style.left =
-        time * document.querySelector("#dPlayerVideoMain").currentTime -
+        time * videoDom.currentTime -
         resizeDragDom.style.transform
           .split("(")[1]
           .split(",")[0]
@@ -366,7 +359,7 @@ const handleseeking = (e) => {
         "px";
     } else {
       document.querySelector(".progressBar").style.left =
-        time * document.querySelector("#dPlayerVideoMain").currentTime + "px";
+        time * videoDom.currentTime + "px";
     }
   }
 };
@@ -432,12 +425,7 @@ const onCanplay = (e) => {
 const handleSeeking = (e) => {
   // video DOM
   let video = document.querySelector("#dPlayerVideoMain");
-  video.pause();
-
-  // video.addEventListener("pause", function (e) {
-  //   console.log("暂停播放");
-  //   console.log(e);
-  // });
+  // video.pause();
 };
 
 // 2.1 视频剪辑插件
@@ -590,6 +578,16 @@ function dragMoveListener(event) {
   // update the posiion attributes
   target.setAttribute("data-x", x);
 
+  // 拖动时设置遮罩层
+  document.querySelector(".maskLayerLeft").style.width = x - 14 + "px";
+  document.querySelector(".maskLayerRight").style.width =
+    355 -
+    x -
+    14 -
+    parseInt(document.querySelector(".resize-drag").style.width) +
+    1 +
+    "px";
+
   // 设置视频起始时间
   if (dragX.value !== startTime.value) {
     startTime.value = (videoTime.value / 325) * dragX.value;
@@ -701,9 +699,11 @@ const mouseUpRight = () => {
   let resizeDragDom = document.querySelector(".resize-drag");
   // video DOM
   let video = document.querySelector("#dPlayerVideoMain");
-  video.currentTime =
-    (videoTime.value / 325) *
-    resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+  // setTimeout(() => {
+  //   video.currentTime =
+  //     (videoTime.value / 325) *
+  //     resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+  // }, 1000);
 };
 
 // 3.1 点击生成按钮
@@ -714,8 +714,9 @@ const handleCreateBtn = () => {
   videoGifFlag.value = true;
 };
 
-// mp4boxFile 测试
+// mp4boxFile 测试 ceshi shibukeneng ceshide
 const checkVideoCode = async (file) => {
+  console.log(111);
   return new Promise((resolve, reject) => {
     const mp4boxFile = MP4Box.createFile();
     const reader = new FileReader();

@@ -53,6 +53,22 @@ export function getJSAPIParams({ mld, openId }) {
   );
 }
 
+/** JSAPI 统一下单 ,获取非微信支付需要的参数
+ * @param {*} mld  用户id
+ * @param {*} memberId
+ * @returns
+ */
+export function getNotJSAPIParams({ memberId, mId }) {
+  let formData = new FormData();
+  formData.append("memberId", memberId);
+  formData.append("mId", mId);
+  return requestWithoutToken(
+    "/wap/app-api/pay/wx/createUnifiedOrderH5",
+    "post",
+    formData
+  );
+}
+
 /** JSAPI 订单状态查询
  * @param {*} memberId  用户id
  * @param {*} out_trade_no  统一下单接口返回的out_trade_no

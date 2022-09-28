@@ -320,6 +320,7 @@ const downloadImg = () => {
 // 10.点击一块钱去水印，1.创建制作记录，2.查看图片支付状态
 const handlePay = () => {
   createMake();
+
   // if (typeof WeixinJSBridge == "undefined") {
   //   if (document.addEventListener) {
   //     console.log(11);
@@ -381,6 +382,16 @@ const payTrue = async () => {
 
 // 14.1 未支付，微信支付
 function onBridgeReady() {
+  console.log(store.state.user.loginState);
+
+  // 其他支付
+  if (store.state.user.loginState === "other") {
+  } // 微信支付
+  else if (
+    store.state.user.loginState === "wechat" ||
+    store.state.user.loginState === "wechat-tool"
+  ) {
+  }
   // 获取需要的参数
   getWeChatPayParams();
 
