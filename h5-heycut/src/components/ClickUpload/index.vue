@@ -65,7 +65,6 @@
         />
       </div>
       <!-- 拖拽 -->
-      <!-- 拖拽 -->
       <div class="video-cut-out">
         <div class="resize-drag">
           <!-- 左 -->
@@ -137,6 +136,8 @@
         </ul>
       </div>
     </div>
+
+    <conversionInModal :modalObj="modalObj"></conversionInModal>
   </div>
 </template>
 
@@ -148,8 +149,10 @@ import interact from "interactjs";
 import GIF from "../../../static/gif.js";
 import { getGifWorker } from "../../../static/gif.worker.js";
 import { useStore } from "vuex";
+import conversionInModal from "@/components/modal/conversionInModal/index.vue";
+
 component: {
-  videoPlay;
+  videoPlay, conversionInModal;
 }
 let store = useStore();
 // file文件 DOM                        ----- file文件
@@ -174,7 +177,7 @@ let videoPlayFlag = ref(1); // 1是正常状态  2是load状态 3是隐藏
 let timers = ref(null);
 let marginTop = ref("-3.2rem");
 
-// 视频截至时间                     ----- 视频剪辑插件
+// 视频截至时间                         ----- 视频剪辑插件
 let endTime = ref(null);
 // 视频开始时间
 let startTime = ref(0);
@@ -185,6 +188,13 @@ let dragX = ref(null);
 let flag = ref(true);
 // 视频自动播放flag
 let videoFlag = ref(false);
+
+// // 遮罩层变量                  ---------------转换中 遮罩层
+let modalObj = ref({
+  flag: false,
+  num: 0,
+});
+
 // 点击上传视频
 const handleUpLoading = () => {
   uploadDom.value.click();
@@ -201,7 +211,6 @@ const handleFileInput = (e) => {
   videoUrl.value = URL.createObjectURL(e.target.files[0]);
   videoPlayFlag.value = 2;
 };
-
 // 1.1vodeo插件 视频参数
 const options = reactive({
   width: "100%", //播放器高度
@@ -211,7 +220,7 @@ const options = reactive({
   src: videoUrl, //视频源
   muted: false, //静音
   webFullScreen: false,
-
+  loop: false, // 是否视频一结束就重新开始
   speedRate: ["0.75", "1.0", "1.25", "1.5", "2.0"], //播放倍速
   autoPlay: false, //自动播放
   loop: false, //循环播放
@@ -324,7 +333,6 @@ const handleseeking = (e) => {
   // 重新赋值结束时间
   endTime.value =
     (videoTime.value / 325) * (dragX.value + resizeDragDom.clientWidth);
-
   // 如果是自动播放就回到起点，不是自动播放就停在原地
   if (currentTime >= endTime.value && videoFlag.value == true) {
     videoDom.currentTime = (videoTime.value / 325) * dragX.value;
@@ -376,9 +384,13 @@ const handleVideoError = (e) => {
 
 // 1.5 可播放监听事件，当浏览器能够开始播放指定的音频/视频时触发
 const onCanplay = (e) => {
+  // 整个拖动的盒子
+  let resizeDragDom = document.querySelector(".resize-drag");
+  // video DOM
+  let videoDom = document.querySelector("#dPlayerVideoMain");
+
   // 判断是否点击生成按钮，点了开启定时器获取视频帧
   if (videoGifFlag.value) {
-    console.log(111);
     let gif = new GIF({
       workers: 2,
       quality: 10,
@@ -394,21 +406,28 @@ const onCanplay = (e) => {
       if (
         document.querySelector("#dPlayerVideoMain").currentTime >= endTime.value
       ) {
-        // // 渲染图片
+        gif.render();
+        // 渲染图片
         gif.on("finished", (blob) => {
           window.open(URL.createObjectURL(blob));
+
+          // 操作完之后关闭开关
+          modalObj.value.num = 100;
+          modalObj.value.flag = false;
         });
-        gif.render();
+
         return clearInterval(setGifTimer.value);
       }
       if (drawTimestamp === 100) {
-        let videoDom = document.getElementById("dPlayerVideoMain");
+        // video DOM
+        let videoDom = document.querySelector("#dPlayerVideoMain");
         let canvas = document.getElementById("myCanvas");
         canvas.width = videoDom.videoWidth;
         canvas.height = videoDom.videoHeight;
         var ctx = canvas.getContext("2d");
         ctx.drawImage(videoDom, 0, 0, canvas.width, canvas.height);
         gif.addFrame(canvas, { delay: 100, copy: true });
+        let dataURL = canvas.toDataURL("image/jpeg"); // 转换为base64
         drawTimestamp = 0;
       }
 
@@ -416,7 +435,6 @@ const onCanplay = (e) => {
       drawTimestamp += 50;
     }, 50);
 
-    // 操作完之后关闭开关
     videoGifFlag.value = false;
   }
 };
@@ -565,7 +583,7 @@ function dragMoveListener(event) {
   let video = document.querySelector("#dPlayerVideoMain");
   // 整个拖动的盒子
   let resizeDragDom = document.querySelector(".resize-drag");
-  video.pause();
+  // video.pause();
   document.querySelector(".progressBar").style.left = "50%";
 
   var target = event.target;
@@ -607,7 +625,7 @@ function dragMoveListener(event) {
     ) +
       parseInt(resizeDragDom.clientWidth / 2));
 
-  video.pause();
+  // video.pause();
 }
 // this function is used later in the resizing and gesture demos
 window.dragMoveListener = dragMoveListener;
@@ -620,7 +638,7 @@ const handleDownLeft = () => {
   let left = document.querySelector(".drag-left");
   // video DOM
   let video = document.querySelector("#dPlayerVideoMain");
-  video.pause();
+  // video.pause();
 
   // 盒子拖动事件
   left.ontouchmove = () => {
@@ -629,13 +647,13 @@ const handleDownLeft = () => {
     let resizeDragDom = document.querySelector(".resize-drag");
 
     // 设置视频播放的时间
-    // video.currentTime =
-    //   (videoTime.value / 325) *
-    //   resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+    video.currentTime =
+      (videoTime.value / 325) *
+      resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
 
     // 设置进度条
     document.querySelector(".progressBar").style.left = 0;
-    video.pause();
+    // video.pause();
   };
 };
 // 2.4.2 抬起
@@ -660,7 +678,7 @@ const handleDownRight = () => {
   // video DOM
   let video = document.querySelector("#dPlayerVideoMain");
   // 让video不播放
-  video.pause();
+  // video.pause();
 
   // 盒子拖动事件
   right.ontouchmove = () => {
@@ -681,7 +699,7 @@ const handleDownRight = () => {
     document.querySelector(".progressBar").style.left =
       resizeDragDom.clientWidth + "px";
     // 让video不播放
-    video.pause();
+    // video.pause();
   };
 };
 // 2.5.2 抬起
@@ -708,15 +726,44 @@ const mouseUpRight = () => {
 
 // 3.1 点击生成按钮
 const handleCreateBtn = () => {
-  // 让视频回到起点，开始获取视频帧
-  // document.querySelector("#dPlayerVideoMain").currentTime = dragX.value;
-  // 开启开关,onCanplay 事件中生成gif
-  videoGifFlag.value = true;
+  // 整个拖动的盒子
+  let resizeDragDom = document.querySelector(".resize-drag");
+  // video DOM
+  let videoDom = document.querySelector("#dPlayerVideoMain");
+
+  // 判断是否能点击
+  if (videoGifFlag.value == false) {
+    let timer = null;
+    // 进度
+    if (modalObj.value.num !== 100) {
+      if (modalObj.value.num === 99) {
+        modalObj.value.num = 99;
+      } else {
+        timer = setInterval(() => {
+          modalObj.value.num += 1;
+        }, 1000);
+      }
+    } else {
+      clearInterval(timer);
+    }
+
+    // 让视频回到起点，开始获取视频帧
+    if (resizeDragDom.style.transform) {
+      videoDom.currentTime =
+        (videoTime.value / 325) *
+        resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+    } else {
+      videoDom.currentTime = 0;
+    }
+
+    // 开启开关,onCanplay 事件中生成gif
+    videoGifFlag.value = true;
+    modalObj.value.flag = true;
+  }
 };
 
 // mp4boxFile 测试 ceshi shibukeneng ceshide
 const checkVideoCode = async (file) => {
-  console.log(111);
   return new Promise((resolve, reject) => {
     const mp4boxFile = MP4Box.createFile();
     const reader = new FileReader();
