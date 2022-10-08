@@ -30,7 +30,7 @@ export function getUploadProof() {
   );
 }
 
-/** 压缩进度chaxun
+/** 压缩进度查询
  * @param {*} persistentId
  * @returns
  */

@@ -11,6 +11,9 @@ module.exports = defineConfig({
           changeOrigin: true,
         },
       },
+      historyApiFallback: {
+        index: "/index.html", //与output的publicPath
+      },
     },
     resolve: {
       alias: {

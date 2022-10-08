@@ -84,3 +84,19 @@ export function OrderStatusQuery({ memberId, out_trade_no }) {
     out_trade_no,
   });
 }
+
+/** h5统一下单
+ * @param {*} memberId  用户id
+ * @param {*} mId
+ * @returns
+ */
+export function h5PlaceOrder({ memberId, mId }) {
+  return requestWithoutToken(
+    "/wap/app-api/pay/wx/createUnifiedOrderH5",
+    "post",
+    {
+      memberId,
+      mId,
+    }
+  );
+}

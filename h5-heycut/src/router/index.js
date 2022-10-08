@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/Index/index.vue";
 
 const routes = [
@@ -24,7 +24,9 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(process.env.BASE_URL),
+  mode: "history",
+  // history: createWebHashHistory(), //hash   http://localhost:8080/后面会带乱七八糟的东西
+  history: createWebHistory(), // history
   routes,
 });
 

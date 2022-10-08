@@ -28,7 +28,7 @@ import Title from "@/components/Title/index.vue"; // 标题组件
 import FlickerAnimation from "@/components/FlickerAnimation/index.vue"; // 闪烁动画组件
 import ClickUpload from "@/components/ClickUpload/index.vue"; // 击上传虚线组件
 // import SlideModule from "@/components/SlideModule/index.vue"; // 滑动画面
-import MoreTools from "@/components/MoreTools/index.vue"; // 更多工具
+import MoreTools from "components/MoreTools/index.vue"; // 更多工具
 // 接口
 import { voluntarilyLogin, WeChatLogin, lookLoginInfo } from "@/api/login.js";
 import { onMounted, ref } from "vue";

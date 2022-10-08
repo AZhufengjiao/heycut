@@ -43,8 +43,20 @@
     </div>
     <div class="button-box">
       <div class="download-btn">
-        <div><button @click="downloadImg">下载GIF</button></div>
-        <div class="div-style" @click="handlePay">&yen;1.00去水印</div>
+        <div v-if="!buttonState.flag">
+          <button @click="downloadImg">下载GIF</button>
+        </div>
+        <div
+          :style="{ width: buttonState.flag ? '100%' : '1.49rem' }"
+          class="div-style"
+          @click="handlePay"
+        >
+          {{
+            !buttonState.flag
+              ? buttonState.title
+              : "立即下载无水印GIF（已支付）"
+          }}
+        </div>
       </div>
       <div class="new-make"><button @click="anewMake">重新制作</button></div>
     </div>
@@ -82,6 +94,7 @@ import {
   inquireImgPayState,
   inquireImgHavePaidState,
   getJSAPIParams,
+  h5PlaceOrder,
 } from "@/api/pay.js";
 import { useStore } from "vuex";
 import axios from "axios";
@@ -101,6 +114,11 @@ let moreNum = ref(null);
 
 // 视频url             ------------gif数据
 let gifUrl = ref(null);
+// 支付 button 状态
+let buttonState = ref({
+  flag: false, // 支付状态
+  title: `¥1.00去水印`,
+});
 // 请求参数 token key
 let requestObj = ref(null);
 // 压缩轮训定时器
@@ -109,6 +127,10 @@ let compressTimer = ref(null);
 let compressSize = computed(() => store.state.compress.size);
 // gif 图片  无码和有码
 let gifObj = ref(null);
+// gifObj.value.payState               支付状态
+// gifObj.value.newWmFileName          拼接有水印url
+// gifObj.value.mId                    创建制作记录返回的参数
+// gifObj.value.h5PayObj               非微信请求跳转支付链接 准备拼接 参数
 
 // 遮罩层变量           ------------upload弹出框遮罩层
 let modalObj = ref({
@@ -119,10 +141,53 @@ let CompressModalObj = ref({
   flag: false,
 });
 
+let strsss = ref(null);
+// 0
 onMounted(() => {
+  // window.location.href =
+  //   'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx08183522693277a20876f100bac59e0000&package=589837414&redirect_url=http%3A%2F%2Flocalhost%3A8080%2Fcompress%2Fvideo%3FuniqueId%3Df9950b332e1940b09018dc0efb57e093';
+  let str =
+    "https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx08183522693277a20876f100bac59e0000&package=589837414&redirect_url=http%3A%2F%2Flocalhost%3A8080%2Fcompress%2Fvideo%3FuniqueId%3Df9950b332e1940b09018dc0efb57e093";
+
+  // window.location.href =
+  //   'http://localhost:8080/compress/qq?name="+encodeURL(encodeURL(https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx08183522693277a20876f100bac59e0000&package=589837414&redirect_url=http%3A%2F%2Flocalhost%3A8080%2Fcompress%2Fvideo%3FuniqueId%3Df9950b332e1940b09018dc0efb57e093))"';
   current.value = "1M";
   store.commit("compress/setSize", "1M");
+
+  // 查看该页面gif图片是否支付
+  // inquireImgPayStateFn();
+  // 已支付
+  if (window.location.href.indexOf("uniqueId") > -1) {
+    // 已支付
+    // 图片支付状态
+    buttonState.value.flag = true;
+  } else {
+    // 未支付
+    buttonState.value.flag = false;
+    console.log(str.split("redirect_url=")[1]);
+    inquireImgPayStateFn("9bd5b5ab69cf421695a4446a97730463");
+  }
 });
+
+// 0.1 查询图片支付状态
+const inquireImgPayStateFn = async (str) => {
+  let uniqueId = str;
+  return await inquireImgPayState(uniqueId).then((res) => {
+    console.log(res.data);
+    console.log(str);
+    console.log("http://wap.img.soogif.com/" + str);
+    strsss.value = "http://wap.img.soogif.com/" + str;
+    // 未支付
+    if (res.data.code == 201) {
+      buttonState.value.flag = false;
+    }
+    // 已支付
+    if (res.data.code == 200) {
+      // 调用已支付
+      buttonState.value.flag = true;
+    }
+  });
+};
 
 // 1. 点击跳转样式，切换选中             ----- 上 选择压缩大小
 const handleComress = (num, num2) => {
@@ -225,22 +290,40 @@ const setCompressRequest = async () => {
 const queryCompressSchedule = async () => {
   let persistentId = requestObj.value.persistentId;
   return await getCompressSchedule(persistentId).then((res) => {
+    // 压缩成功
     if (res.data.code == 200) {
+      // 存储压缩状态
+      gifObj.value = res.data.data.data;
+      // 拼接有水印url
+      gifObj.value.newWmFileName =
+        "http://wap.img.soogif.com/" + gifObj.value.wmFileName;
+
       // 先清除定时器
       clearInterval(compressTimer.value);
       compressTimer.value = null;
-      // 赋值添加水印需要的wmPid
-      requestObj.value.wmPid = res.data.data.data.wmPid;
+
+      // 关闭弹出框
+      modalObj.value.flag = false;
+
+      // 数据记录
+      setDataRecord();
+
+      // 修改样式 ***
+      store.commit("star/setImgTwo", false);
+      // 修改i的样式
+      document.querySelectorAll(".i").forEach((item) => {
+        item.style.background = "#836ffa";
+      });
 
       // 再轮训添加水印进度
-      compressTimer.value = window.setInterval(() => {
-        getWatermarkPlan();
-      }, 1000);
+      // compressTimer.value = window.setInterval(() => {
+      //   getWatermarkPlan();
+      // }, 1000);
     }
   });
 };
 
-// 6.添加水印进度查询
+// 6.添加水印进度查询    ----------------废弃
 const getWatermarkPlan = async () => {
   let wmPid = requestObj.value.wmPid;
   return await getWatermarkSchedule(wmPid).then((res) => {
@@ -319,8 +402,19 @@ const downloadImg = () => {
 
 // 10.点击一块钱去水印，1.创建制作记录，2.查看图片支付状态
 const handlePay = () => {
+  console.log(buttonState.value.flag);
+  // 先获取支付要用的参数，在轮询支付状态
   createMake();
-
+  // 未支付
+  if (buttonState.value.flag == false) {
+    onBridgeReady();
+  }
+  // 已支付
+  if (buttonState.value.flag == true) {
+    // 调用已支付
+    payTrue();
+  }
+  console.log(buttonState.value.flag);
   // if (typeof WeixinJSBridge == "undefined") {
   //   if (document.addEventListener) {
   //     console.log(11);
@@ -343,28 +437,12 @@ const createMake = async () => {
   };
   return await createRecord(obj).then((res) => {
     if (res.data.code == 200) {
-      //  保存uniqueId
+      //  保存mId
+      gifObj.value.mId = res.data.data;
       gifObj.value.uniqueId = res.data.data;
 
-      // 查询图片支付状态
-      inquireImgPayStateFn();
-    }
-  });
-};
-
-// 12 查询图片支付状态
-const inquireImgPayStateFn = async () => {
-  let uniqueId = gifObj.value.uniqueId;
-  return await inquireImgPayState(uniqueId).then((res) => {
-    if (res.data.code == 200) {
-      gifObj.value.payState = res.data.data; // 0 未支付，1 已支付
-      // 未支付
-      if (res.data.data == 0) {
-        onBridgeReady();
-      } // 已支付;
-      else if (res.data.data == 1) {
-        payTrue();
-      }
+      // // 查询图片支付状态
+      // inquireImgPayStateFn();
     }
   });
 };
@@ -376,7 +454,6 @@ const payTrue = async () => {
     if (res.data.code == 200) {
       console.log(res.data.data);
     }
-    console.log(res);
   });
 };
 
@@ -384,37 +461,20 @@ const payTrue = async () => {
 function onBridgeReady() {
   console.log(store.state.user.loginState);
 
-  // 其他支付
+  // 其他支付 pc端
   if (store.state.user.loginState === "other") {
+    wechatNotH5Pay();
   } // 微信支付
   else if (
     store.state.user.loginState === "wechat" ||
     store.state.user.loginState === "wechat-tool"
   ) {
+    // 获取需要的参数
+    getWeChatPayParams();
   }
-  // 获取需要的参数
-  getWeChatPayParams();
-
-  // WeixinJSBridge.invoke(
-  //   "getBrandWCPayRequest",
-  //   {
-  //     appId: "wx2421b1c4370ec43b", //公众号ID，由商户传入
-  //     timeStamp: Date.now(), //时间戳，自1970年以来的秒数
-  //     nonceStr: "e61463f8efa94090b1f366cccfbbb444", //随机串
-  //     package: "prepay_id=u802345jgfjsdfgsdg888",
-  //     signType: "MD5", //微信签名方式：
-  //     paySign: "70EA570631E4BB79628FBCA90534C63FF7FADD89", //微信签名
-  //   },
-  //   function (res) {
-  //     if (res.err_msg == "get_brand_wcpay_request:ok") {
-  //       // 使用以上方式判断前端返回,微信团队郑重提示：
-  //       //res.err_msg将在用户支付成功后返回ok，但并不保证它绝对可靠。
-  //     }
-  //   }
-  // );
 }
 
-// 14.2 获取微信支付需要的参数
+// 14.1.1 获取微信支付需要的参数
 const getWeChatPayParams = async () => {
   let obj = {
     mld: gifObj.value.uniqueId,
@@ -423,6 +483,34 @@ const getWeChatPayParams = async () => {
   console.log(obj);
   return await getJSAPIParams(obj).then((res) => {
     console.log(res);
+  });
+};
+
+// 14.1.2 非微信支付
+const wechatNotH5Pay = async () => {
+  let obj = {
+    memberId: store.state.user.userObj.id,
+    mId: gifObj.value.mId,
+  };
+
+  return await h5PlaceOrder(obj).then((res) => {
+    if (res.data.code == 200) {
+      // gifObj.value.h5PayObj = res.data.data;
+
+      console.log(gifObj.value.uniqueId);
+
+      // 获取数据，跳转支付页面
+      let payRedirectUrl =
+        res.data.data.mwebUrl +
+        "&redirect_url=" +
+        encodeURIComponent(
+          window.location.href + "/video?uniqueId=" + gifObj.value.uniqueId
+        );
+
+      console.log(payRedirectUrl.slice(-32));
+      console.log(payRedirectUrl);
+      // window.location.href = payRedirectUrl;
+    }
   });
 };
 </script>

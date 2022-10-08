@@ -72,7 +72,6 @@
             class="drag-left"
             @touchstart="handleDownLeft"
             @touchend="mouseUpLeft"
-            @click="clickLeft"
           >
             <span></span>
           </div>
@@ -81,7 +80,6 @@
             class="drag-right"
             @touchstart="handleDownRight"
             @touchend="mouseUpRight"
-            @click="clickRight"
           >
             <span></span>
           </div>
@@ -155,7 +153,7 @@ component: {
   videoPlay, conversionInModal;
 }
 let store = useStore();
-// file文件 DOM                        ----- file文件
+// file文件 DOM                           ----- file文件
 let uploadDom = ref(null);
 // 视频url
 let videoUrl = ref(null);
@@ -163,7 +161,7 @@ let videoUrl = ref(null);
 let videoDom = ref(null);
 let file = ref(null);
 
-// video时长                           ----- video变量
+// video时长                              ----- video变量
 let videoTime = ref(null);
 // 视频剪辑flag
 let videoGifFlag = ref(false);
@@ -177,7 +175,7 @@ let videoPlayFlag = ref(1); // 1是正常状态  2是load状态 3是隐藏
 let timers = ref(null);
 let marginTop = ref("-3.2rem");
 
-// 视频截至时间                         ----- 视频剪辑插件
+// 视频截至时间                            ----- 视频剪辑插件
 let endTime = ref(null);
 // 视频开始时间
 let startTime = ref(0);
@@ -189,7 +187,7 @@ let flag = ref(true);
 // 视频自动播放flag
 let videoFlag = ref(false);
 
-// // 遮罩层变量                  ---------------转换中 遮罩层
+// // 遮罩层变量                           ------转换中 遮罩层
 let modalObj = ref({
   flag: false,
   num: 0,
@@ -374,6 +372,7 @@ const handleseeking = (e) => {
 
 // 1.4 视频播放错误
 const handleVideoError = (e) => {
+  console.log(e);
   // 视频不能播放
   if (e) {
     setTimeout(() => {
@@ -540,7 +539,7 @@ interact(".resize-drag")
     },
   });
 
-// 节流
+//节流
 let timer = null;
 // 2.2 拖动改变宽高，触发事件并节流
 const dragFn = (date) => {
@@ -637,19 +636,23 @@ const handleDownLeft = () => {
   // 左按钮DOM
   let left = document.querySelector(".drag-left");
   // video DOM
-  let video = document.querySelector("#dPlayerVideoMain");
+  let videoDom = document.querySelector("#dPlayerVideoMain");
   // video.pause();
 
   // 盒子拖动事件
   left.ontouchmove = () => {
-    video.pause();
+    videoDom.pause();
     // 整个拖动的盒子
     let resizeDragDom = document.querySelector(".resize-drag");
-
+    // console.log(resizeDragDom.style.transform);
     // 设置视频播放的时间
-    video.currentTime =
-      (videoTime.value / 325) *
-      resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+    if (resizeDragDom.style.transform == "") {
+      videoDom.currentTime = 0;
+    } else {
+      videoDom.currentTime =
+        (videoTime.value / 325) *
+        resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0];
+    }
 
     // 设置进度条
     document.querySelector(".progressBar").style.left = 0;
@@ -672,22 +675,23 @@ const mouseUpLeft = () => {
 const handleDownRight = () => {
   // 取消自动播放
   videoFlag.value = false;
-
+  console.log(22);
   // 右按钮
   let right = document.querySelector(".drag-right");
+
   // video DOM
-  let video = document.querySelector("#dPlayerVideoMain");
+  let videoDom = document.querySelector("#dPlayerVideoMain");
   // 让video不播放
   // video.pause();
-
   // 盒子拖动事件
   right.ontouchmove = () => {
     // 让video不播放
-    video.pause();
+    // video.pause();
     // 整个拖动的盒子
     let resizeDragDom = document.querySelector(".resize-drag");
+
     // 设置视频播放的时间
-    video.currentTime =
+    videoDom.currentTime =
       (videoTime.value / 325) *
       (parseInt(
         resizeDragDom.style.transform.split("(")[1].split(",")[0].split("p")[0]
