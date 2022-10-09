@@ -76,13 +76,15 @@ export function getNotJSAPIParams({ memberId, mId }) {
  * @returns
  */
 export function OrderStatusQuery({ memberId, out_trade_no }) {
-  // let formData = new FormData();
-  // formData.append("memberId", memberId);
-  // formData.append("out_trade_no", out_trade_no);
-  return requestWithoutToken("/wap/app-api/pay/wx/payStatusJS", "post", {
-    memberId,
-    out_trade_no,
-  });
+  // console.log(memberId, out_trade_no);
+  let formData = new FormData();
+  formData.append("memberId", memberId);
+  formData.append("out_trade_no", out_trade_no);
+  return requestWithoutToken(
+    "/wap/app-api/pay/wx/payStatusJS",
+    "post",
+    formData
+  );
 }
 
 /** h5统一下单

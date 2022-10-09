@@ -1,4 +1,5 @@
 <template>
+  <!-- 压缩中 一个图转圈 -->
   <div v-if="modalObj.flag" class="loadingmodal">
     <!-- 遮罩层 -->
     <div class="zzc"></div>

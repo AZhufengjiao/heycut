@@ -39,7 +39,10 @@
   <!-- 压缩完成 -->
   <div class="compress-succeed" v-else>
     <div class="video-box">
-      <img :src="gifObj.newWmFileName" alt="" />
+      <img
+        :src="!buttonState.flag ? gifObj.newWmFileName : gifObj.newFileName"
+        alt=""
+      />
     </div>
     <div class="button-box">
       <div class="download-btn">
@@ -71,12 +74,19 @@
     @updateFlag="compressSizeFlag"
     @moreNum="handleMoreNum"
   ></compressSizeModal>
+
+  <!-- 提示文字弹出框 -->
+  <promptModal
+    :modalObj="Titlemodal"
+    @updateFlag="compressTitleFlag"
+  ></promptModal>
 </template>
 
 <script setup>
 import { ref, reactive, watch, onUnmounted, computed, onMounted } from "vue";
 import loadingModal from "@/components/modal/loadingModal"; // 上传 upload弹出框
 import compressSizeModal from "@/components/modal/compressSize/index.vue"; // 选择压缩大小弹出框
+import promptModal from "@/components/modal/promptModal/index.vue"; // 提示文字弹出框
 import SlideModule from "@/components/SlideModule/index.vue"; // 滑动画面
 // 视频插件
 import { videoPlay } from "vue3-video-play";
@@ -95,12 +105,13 @@ import {
   inquireImgHavePaidState,
   getJSAPIParams,
   h5PlaceOrder,
+  OrderStatusQuery,
 } from "@/api/pay.js";
 import { useStore } from "vuex";
 import axios from "axios";
-components: {
-  loadingModal, videoPlay, compressSizeModal, SlideModule;
-}
+// components: {
+//   loadingModal, videoPlay, compressSizeModal, SlideModule, promptModal;
+// }
 const store = useStore();
 // file Dom            ---------file数据
 let fileDom = ref(null);
@@ -127,8 +138,9 @@ let compressTimer = ref(null);
 let compressSize = computed(() => store.state.compress.size);
 // gif 图片  无码和有码
 let gifObj = ref(null);
-// gifObj.value.payState               支付状态
+// gifObj.value.payState               支付状态参数变量
 // gifObj.value.newWmFileName          拼接有水印url
+// gifObj.value.newFileName            拼接没有水印url
 // gifObj.value.mId                    创建制作记录返回的参数
 // gifObj.value.h5PayObj               非微信请求跳转支付链接 准备拼接 参数
 
@@ -140,52 +152,102 @@ let modalObj = ref({
 let CompressModalObj = ref({
   flag: false,
 });
+//                      ------------提示文字弹出框遮罩层
+let Titlemodal = ref({
+  flag: false,
+  title: "提示",
+  content: "图片格式错误，请上传gif图片",
+});
+// 让弹出框关闭         ------------  提示文字关闭弹出框遮罩层
+const compressTitleFlag = (flag) => {
+  Titlemodal.value.flag = flag;
+  // 清空input缓存
+  fileDom.value.value = null;
+};
 
-let strsss = ref(null);
 // 0
 onMounted(() => {
-  // window.location.href =
-  //   'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx08183522693277a20876f100bac59e0000&package=589837414&redirect_url=http%3A%2F%2Flocalhost%3A8080%2Fcompress%2Fvideo%3FuniqueId%3Df9950b332e1940b09018dc0efb57e093';
-  let str =
-    "https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx08183522693277a20876f100bac59e0000&package=589837414&redirect_url=http%3A%2F%2Flocalhost%3A8080%2Fcompress%2Fvideo%3FuniqueId%3Df9950b332e1940b09018dc0efb57e093";
-
-  // window.location.href =
-  //   'http://localhost:8080/compress/qq?name="+encodeURL(encodeURL(https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx08183522693277a20876f100bac59e0000&package=589837414&redirect_url=http%3A%2F%2Flocalhost%3A8080%2Fcompress%2Fvideo%3FuniqueId%3Df9950b332e1940b09018dc0efb57e093))"';
   current.value = "1M";
   store.commit("compress/setSize", "1M");
 
-  // 查看该页面gif图片是否支付
-  // inquireImgPayStateFn();
-  // 已支付
+  let str2 =
+    "http://demo-mobile.soogif.com/compress?uniqueId=212a6383be34401a900828a293921f56&out_trade_no=b3baa070184e4947bdb49858e2018a47";
+
+  // 查看用户是否打开微信支付
+  // 打开
+  // if (str2.indexOf("uniqueId") > -1) {
   if (window.location.href.indexOf("uniqueId") > -1) {
+    // 先获取需要的参数
+    let uniqueId = decodeURIComponent(
+      window.location.search.substring(1).split("&")[0].split("=")[1]
+    );
+    let out_trade_no = decodeURIComponent(
+      window.location.search.substring(1).split("&")[1].split("=")[1]
+    );
+    // let uniqueId = str2.split("?")[1].split("&")[0].split("=")[1];
+
+    // let out_trade_no = str2.split("?")[1].split("&")[1].split("=")[1];
+
     // 已支付
     // 图片支付状态
     buttonState.value.flag = true;
+
+    // 查询图片支付状态
+    inquireImgPayStateFn(uniqueId);
+    // 订单状态查询
+    orderState(out_trade_no);
   } else {
-    // 未支付
+    // 查询图片支付状态
+    // inquireImgPayStateFn("147f318b7fe7454d8a97dd9b4286746f");
+    // 未打开
     buttonState.value.flag = false;
-    console.log(str.split("redirect_url=")[1]);
-    inquireImgPayStateFn("9bd5b5ab69cf421695a4446a97730463");
   }
 });
 
 // 0.1 查询图片支付状态
 const inquireImgPayStateFn = async (str) => {
-  let uniqueId = str;
-  return await inquireImgPayState(uniqueId).then((res) => {
-    console.log(res.data);
-    console.log(str);
-    console.log("http://wap.img.soogif.com/" + str);
-    strsss.value = "http://wap.img.soogif.com/" + str;
-    // 未支付
-    if (res.data.code == 201) {
-      buttonState.value.flag = false;
-    }
+  console.log(111);
+  return await inquireImgPayState(str).then((res) => {
+    console.log(res);
+    // console.log("http://wap.img.soogif.com/" + res.data.data.wmFileName); //有logo
+    // console.log("http://wap.img.soogif.com/" + res.data.data.fileName);
     // 已支付
     if (res.data.code == 200) {
       // 调用已支付
       buttonState.value.flag = true;
+      gifObj.value = {};
+      gifObj.value.newFileName =
+        "http://wap.img.soogif.com/" + res.data.data.fileName;
+      console.log(gifObj.value);
     }
+    // 未支付
+    else if (res.data.code == 201) {
+      buttonState.value.flag = false;
+      gifObj.value = {};
+      gifObj.value.newWmFileName =
+        "http://wap.img.soogif.com/" + res.data.data.wmFileName;
+    }
+
+    // 修改样式 ***
+    store.commit("star/setImgOne", false);
+    // 修改i的样式
+    document.querySelector(".iStyle").style.background = "#836ffa";
+    store.commit("star/setImgTwo", false);
+    // 修改i的样式
+    document.querySelectorAll(".i").forEach((item) => {
+      item.style.background = "#836ffa";
+    });
+  });
+};
+
+// 0.2 订单状态查询
+const orderState = async (out_trade_no) => {
+  let obj = {
+    memberId: store.state.user.userObj.id,
+    out_trade_no,
+  };
+  return await OrderStatusQuery(obj).then((res) => {
+    console.log(res);
   });
 };
 
@@ -220,23 +282,30 @@ const handleUplaod = () => {
 };
 // 2.input change事件
 const FileChange = (e) => {
-  // 用户选择url
-  gifUrl.value = e.target.files[0].name;
+  // 先判断是否是gif图片
+  if (e.target.files[0].type === "image/gif") {
+    // 用户选择url
+    gifUrl.value = e.target.files[0].name;
 
-  // 跳转样式  ***
-  store.commit("star/setImgOne", false);
-  // 修改i的样式
-  document.querySelector(".iStyle").style.background = "#836ffa";
-  //  存储上传的gif文件数据
-  files.value = e.target.files[0];
+    // 跳转样式  ***
+    store.commit("star/setImgOne", false);
+    // 修改i的样式
+    document.querySelector(".iStyle").style.background = "#836ffa";
+    //  存储上传的gif文件数据
+    files.value = e.target.files[0];
 
-  if (e.target.files[0].type.indexOf("image/gif") > -1) {
-    // 获取上传凭证
-    getUploadVoucher();
-    // 打开弹出框
-    modalObj.value.flag = true;
+    if (e.target.files[0].type.indexOf("image/gif") > -1) {
+      // 获取上传凭证
+      getUploadVoucher();
+      // 打开弹出框
+      modalObj.value.flag = true;
+    } else {
+      // console.log("-1");
+    }
   } else {
-    // console.log("-1");
+    // 不是gif文件，让提示文字弹出框弹出
+    Titlemodal.value.flag = true;
+    console.log(Titlemodal.value.flag);
   }
 };
 
@@ -398,11 +467,12 @@ const downloadImg = () => {
   a.dispatchEvent(e);
   //释放一个已经存在的路径（有创建createObjectURL就要释放revokeObjectURL）
   URL.revokeObjectURL(url);
+  // console.log(url)
+  // window.open(url, '_blank')
 };
 
 // 10.点击一块钱去水印，1.创建制作记录，2.查看图片支付状态
 const handlePay = () => {
-  console.log(buttonState.value.flag);
   // 先获取支付要用的参数，在轮询支付状态
   createMake();
   // 未支付
@@ -414,7 +484,7 @@ const handlePay = () => {
     // 调用已支付
     payTrue();
   }
-  console.log(buttonState.value.flag);
+
   // if (typeof WeixinJSBridge == "undefined") {
   //   if (document.addEventListener) {
   //     console.log(11);
@@ -432,8 +502,8 @@ const handlePay = () => {
 const createMake = async () => {
   let obj = {
     memberId: store.state.user.userObj.id,
-    url: gifUrl.value,
-    urlWm: gifObj.value.wmFileName,
+    url: "https://wap.img.soogif.com/" + gifObj.value.fileName,
+    urlWm: "https://wap.img.soogif.com/" + gifObj.value.wmFileName,
   };
   return await createRecord(obj).then((res) => {
     if (res.data.code == 200) {
@@ -441,8 +511,9 @@ const createMake = async () => {
       gifObj.value.mId = res.data.data;
       gifObj.value.uniqueId = res.data.data;
 
-      // // 查询图片支付状态
+      // 查询图片支付状态
       // inquireImgPayStateFn();
+      // inquireImgPayStateFn(gifObj.value.uniqueId);
     }
   });
 };
@@ -451,8 +522,43 @@ const createMake = async () => {
 const payTrue = async () => {
   let memberId = store.state.user.userObj.id;
   return await inquireImgHavePaidState(memberId).then((res) => {
+    console.log(res);
     if (res.data.code == 200) {
       console.log(res.data.data);
+
+      let Url = gifObj.value.newFileName; //图片路径，也可以传值进来
+      var triggerEvent = "touchstart"; //指定下载方式
+      var blob = new Blob([""], { type: "application/octet-stream" }); //二进制大型对象blob
+      var url = URL.createObjectURL(blob); //创建一个字符串路径空位
+      var a = document.createElement("a"); //创建一个 a 标签
+      a.href = Url; //把路径赋到a标签的href上
+      //正则表达式，这里是把图片文件名分离出来。拿到文件名赋到a.download,作为文件名来使用文本
+      a.download = Url.replace(/(.*\/)*([^.]+.*)/gi, "$2").split("?")[0];
+      /* var e = document.createEvent('MouseEvents');  //创建事件（MouseEvents鼠标事件）
+	    e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null); //初始化鼠标事件（initMouseEvent已弃用）*/
+
+      //代替方法。创建鼠标事件并初始化（后面这些参数我也不清楚，参考文档吧 https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent）
+      var e = new MouseEvent(
+        "click",
+        (true,
+        false,
+        window,
+        0,
+        0,
+        0,
+        0,
+        0,
+        false,
+        false,
+        false,
+        false,
+        0,
+        null)
+      );
+      //派遣后，它将不再执行任何操作。执行保存到本地
+      a.dispatchEvent(e);
+      //释放一个已经存在的路径（有创建createObjectURL就要释放revokeObjectURL）
+      URL.revokeObjectURL(url);
     }
   });
 };
@@ -488,30 +594,41 @@ const getWeChatPayParams = async () => {
 
 // 14.1.2 非微信支付
 const wechatNotH5Pay = async () => {
-  let obj = {
-    memberId: store.state.user.userObj.id,
-    mId: gifObj.value.mId,
-  };
+  console.log(gifObj.value.mId)
+  axios({
+    method: "post",
+    url: "http://demo-mobile.soogif.com/wap/app-api/pay/wx/createUnifiedOrderH5",
+    params: {
+      memberId: store.state.user.userObj.id,
+      mId: gifObj.value.mId,
+    },
+  }).then((res) => {
+    console.log(res);
+    // if (res.data.code == 200) {
+    //   // gifObj.value.h5PayObj = res.data.data;
+    //   console.log(res.data.data.mwebUrl);
+    //   // console.log(gifObj.value.uniqueId);
 
-  return await h5PlaceOrder(obj).then((res) => {
-    if (res.data.code == 200) {
-      // gifObj.value.h5PayObj = res.data.data;
+    //   // 获取数据，跳转支付页面
+    //   // let payRedirectUrl =
+    //   //   res.data.data.mwebUrl +
+    //   //   "&redirect_url=" +
+    //   //   encodeURIComponent(
+    //   //     window.location.origin +
+    //   //       "/compress?uniqueId=" +
+    //   //       gifObj.value.uniqueId +
+    //   //       "&out_trade_no=" +
+    //   //       res.data.data.out_trade_no
+    //   //   );
 
-      console.log(gifObj.value.uniqueId);
-
-      // 获取数据，跳转支付页面
-      let payRedirectUrl =
-        res.data.data.mwebUrl +
-        "&redirect_url=" +
-        encodeURIComponent(
-          window.location.href + "/video?uniqueId=" + gifObj.value.uniqueId
-        );
-
-      console.log(payRedirectUrl.slice(-32));
-      console.log(payRedirectUrl);
-      // window.location.href = payRedirectUrl;
-    }
+    //   // window.location.href = payRedirectUrl;
+    //   // console.log(payRedirectUrl);
+    // }
   });
+
+  // return await h5PlaceOrder(obj).then((res) => {
+
+  // });
 };
 </script>
 
@@ -677,7 +794,7 @@ button {
       font-weight: 600;
       button {
         width: 98.6%;
-        height: 92%;
+        height: 91%;
         position: absolute;
         border: none;
         background: #fff;
