@@ -18,9 +18,11 @@ module.exports = defineConfig({
     resolve: {
       alias: {
         assets: "@/assets",
-        api: "@/api",
-        views: "@/views",
+        common: "@/common",
         components: "@/components",
+        views: "@/views",
+        network: "@/network",
+        store: "@/store",
       },
     },
   },

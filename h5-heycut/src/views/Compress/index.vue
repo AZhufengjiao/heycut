@@ -86,7 +86,7 @@ const lookLogin = async () => {
       res.data.code = 201;
     }
     if (res.data.code == 201) {
-      console.log(222, Object.keys(store.state.user.userObj).length);
+      // console.log(222, Object.keys(store.state.user.userObj).length);
       //是否是微信浏览器
       if (/(micromessenger)/i.test(navigator.userAgent)) {
         //是否电脑微信或者微信开发者工具

@@ -4,13 +4,15 @@ import HomeView from "../views/Index/index.vue";
 const routes = [
   {
     path: "/",
-    redirect: "/convert",
+    redirect: "/compress",
   },
+  // 转化
   {
     path: "/convert",
     name: "home",
     component: HomeView,
   },
+  // 压缩
   {
     path: "/compress",
     name: "compress",

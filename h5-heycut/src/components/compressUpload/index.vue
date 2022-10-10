@@ -102,7 +102,6 @@ import {
 import {
   createRecord,
   inquireImgPayState,
-  inquireImgHavePaidState,
   getJSAPIParams,
   h5PlaceOrder,
   OrderStatusQuery,
@@ -171,7 +170,7 @@ onMounted(() => {
   store.commit("compress/setSize", "1M");
 
   let str2 =
-    "http://demo-mobile.soogif.com/compress?uniqueId=212a6383be34401a900828a293921f56&out_trade_no=b3baa070184e4947bdb49858e2018a47";
+    "http://demo-mobile.soogif.com/compress?uniqueId=undefined&out_trade_no=34ec717acad9488f9f0d4edf67d3a4cd";
 
   // 查看用户是否打开微信支付
   // 打开
@@ -187,7 +186,6 @@ onMounted(() => {
     // let uniqueId = str2.split("?")[1].split("&")[0].split("=")[1];
 
     // let out_trade_no = str2.split("?")[1].split("&")[1].split("=")[1];
-
     // 已支付
     // 图片支付状态
     buttonState.value.flag = true;
@@ -197,8 +195,6 @@ onMounted(() => {
     // 订单状态查询
     orderState(out_trade_no);
   } else {
-    // 查询图片支付状态
-    // inquireImgPayStateFn("147f318b7fe7454d8a97dd9b4286746f");
     // 未打开
     buttonState.value.flag = false;
   }
@@ -206,7 +202,6 @@ onMounted(() => {
 
 // 0.1 查询图片支付状态
 const inquireImgPayStateFn = async (str) => {
-  console.log(111);
   return await inquireImgPayState(str).then((res) => {
     console.log(res);
     // console.log("http://wap.img.soogif.com/" + res.data.data.wmFileName); //有logo
@@ -242,13 +237,24 @@ const inquireImgPayStateFn = async (str) => {
 
 // 0.2 订单状态查询
 const orderState = async (out_trade_no) => {
-  let obj = {
-    memberId: store.state.user.userObj.id,
-    out_trade_no,
-  };
-  return await OrderStatusQuery(obj).then((res) => {
+  axios({
+    method: "post",
+    url: "http://demo-mobile.soogif.com/wap/app-api/pay/wx/payStatusJS",
+    params: {
+      memberId: store.state.user.userObj.id,
+      out_trade_no,
+    },
+  }).then((res) => {
     console.log(res);
   });
+
+  // let obj = {
+  //   memberId: store.state.user.userObj.id,
+  //   out_trade_no,
+  // };
+  // return await OrderStatusQuery(obj).then((res) => {
+  //   console.log(res);
+  // });
 };
 
 // 1. 点击跳转样式，切换选中             ----- 上 选择压缩大小
@@ -278,6 +284,7 @@ const compressSizeFlag = (flag) => {
 
 // 1.点击上传视频按钮，打开file文件夹    ------ 下 上传压缩
 const handleUplaod = () => {
+  buttonState.value.flag = false;
   fileDom.value.click();
 };
 // 2.input change事件
@@ -373,6 +380,9 @@ const queryCompressSchedule = async () => {
 
       // 关闭弹出框
       modalObj.value.flag = false;
+
+      // 创建制作记录 先获取支付要用的参数，在轮询支付状态
+      createMake();
 
       // 数据记录
       setDataRecord();
@@ -473,8 +483,6 @@ const downloadImg = () => {
 
 // 10.点击一块钱去水印，1.创建制作记录，2.查看图片支付状态
 const handlePay = () => {
-  // 先获取支付要用的参数，在轮询支付状态
-  createMake();
   // 未支付
   if (buttonState.value.flag == false) {
     onBridgeReady();
@@ -482,20 +490,27 @@ const handlePay = () => {
   // 已支付
   if (buttonState.value.flag == true) {
     // 调用已支付
-    payTrue();
-  }
+    let Url = gifObj.value.newFileName; //图片路径，也可以传值进来
+    var triggerEvent = "touchstart"; //指定下载方式
+    var blob = new Blob([""], { type: "application/octet-stream" }); //二进制大型对象blob
+    var url = URL.createObjectURL(blob); //创建一个字符串路径空位
+    var a = document.createElement("a"); //创建一个 a 标签
+    a.href = Url; //把路径赋到a标签的href上
+    //正则表达式，这里是把图片文件名分离出来。拿到文件名赋到a.download,作为文件名来使用文本
+    a.download = Url.replace(/(.*\/)*([^.]+.*)/gi, "$2").split("?")[0];
+    /* var e = document.createEvent('MouseEvents');  //创建事件（MouseEvents鼠标事件）
+      e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null); //初始化鼠标事件（initMouseEvent已弃用）*/
 
-  // if (typeof WeixinJSBridge == "undefined") {
-  //   if (document.addEventListener) {
-  //     console.log(11);
-  //     document.addEventListener("WeixinJSBridgeReady", onBridgeReady, false);
-  //   } else if (document.attachEvent) {
-  //     document.attachEvent("WeixinJSBridgeReady", onBridgeReady);
-  //     document.attachEvent("onWeixinJSBridgeReady", onBridgeReady);
-  //   }
-  // } else {
-  //   onBridgeReady();
-  // }
+    //代替方法。创建鼠标事件并初始化（后面这些参数我也不清楚，参考文档吧 https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent）
+    var e = new MouseEvent(
+      "click",
+      (true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+    );
+    //派遣后，它将不再执行任何操作。执行保存到本地
+    a.dispatchEvent(e);
+    //释放一个已经存在的路径（有创建createObjectURL就要释放revokeObjectURL）
+    URL.revokeObjectURL(url);
+  }
 };
 
 // 11.创建制作记录
@@ -507,63 +522,15 @@ const createMake = async () => {
   };
   return await createRecord(obj).then((res) => {
     if (res.data.code == 200) {
+      console.log(11111111, res.data.data);
       //  保存mId
       gifObj.value.mId = res.data.data;
       gifObj.value.uniqueId = res.data.data;
-
-      // 查询图片支付状态
-      // inquireImgPayStateFn();
-      // inquireImgPayStateFn(gifObj.value.uniqueId);
     }
   });
 };
 
-// 13 已支付，查询已支付制作图片列表
-const payTrue = async () => {
-  let memberId = store.state.user.userObj.id;
-  return await inquireImgHavePaidState(memberId).then((res) => {
-    console.log(res);
-    if (res.data.code == 200) {
-      console.log(res.data.data);
-
-      let Url = gifObj.value.newFileName; //图片路径，也可以传值进来
-      var triggerEvent = "touchstart"; //指定下载方式
-      var blob = new Blob([""], { type: "application/octet-stream" }); //二进制大型对象blob
-      var url = URL.createObjectURL(blob); //创建一个字符串路径空位
-      var a = document.createElement("a"); //创建一个 a 标签
-      a.href = Url; //把路径赋到a标签的href上
-      //正则表达式，这里是把图片文件名分离出来。拿到文件名赋到a.download,作为文件名来使用文本
-      a.download = Url.replace(/(.*\/)*([^.]+.*)/gi, "$2").split("?")[0];
-      /* var e = document.createEvent('MouseEvents');  //创建事件（MouseEvents鼠标事件）
-	    e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null); //初始化鼠标事件（initMouseEvent已弃用）*/
-
-      //代替方法。创建鼠标事件并初始化（后面这些参数我也不清楚，参考文档吧 https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/MouseEvent）
-      var e = new MouseEvent(
-        "click",
-        (true,
-        false,
-        window,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-        false,
-        false,
-        false,
-        0,
-        null)
-      );
-      //派遣后，它将不再执行任何操作。执行保存到本地
-      a.dispatchEvent(e);
-      //释放一个已经存在的路径（有创建createObjectURL就要释放revokeObjectURL）
-      URL.revokeObjectURL(url);
-    }
-  });
-};
-
-// 14.1 未支付，微信支付
+// 12.1 未支付，微信支付
 function onBridgeReady() {
   console.log(store.state.user.loginState);
 
@@ -580,7 +547,7 @@ function onBridgeReady() {
   }
 }
 
-// 14.1.1 获取微信支付需要的参数
+// 12.1.1 获取微信支付需要的参数
 const getWeChatPayParams = async () => {
   let obj = {
     mld: gifObj.value.uniqueId,
@@ -592,9 +559,9 @@ const getWeChatPayParams = async () => {
   });
 };
 
-// 14.1.2 非微信支付
+// 12.1.2 非微信支付
 const wechatNotH5Pay = async () => {
-  console.log(gifObj.value.mId)
+  console.log(gifObj.value.mId);
   axios({
     method: "post",
     url: "http://demo-mobile.soogif.com/wap/app-api/pay/wx/createUnifiedOrderH5",
@@ -604,30 +571,31 @@ const wechatNotH5Pay = async () => {
     },
   }).then((res) => {
     console.log(res);
-    // if (res.data.code == 200) {
-    //   // gifObj.value.h5PayObj = res.data.data;
-    //   console.log(res.data.data.mwebUrl);
-    //   // console.log(gifObj.value.uniqueId);
+    if (res.data.code == 200) {
+      // gifObj.value.h5PayObj = res.data.data;
+      console.log(11111, gifObj.value.uniqueId);
 
-    //   // 获取数据，跳转支付页面
-    //   // let payRedirectUrl =
-    //   //   res.data.data.mwebUrl +
-    //   //   "&redirect_url=" +
-    //   //   encodeURIComponent(
-    //   //     window.location.origin +
-    //   //       "/compress?uniqueId=" +
-    //   //       gifObj.value.uniqueId +
-    //   //       "&out_trade_no=" +
-    //   //       res.data.data.out_trade_no
-    //   //   );
+      // 获取数据，跳转支付页面
+      let payRedirectUrl =
+        res.data.data.mwebUrl +
+        "&redirect_url=" +
+        encodeURIComponent(
+          window.location.origin +
+            "/compress?uniqueId=" +
+            gifObj.value.uniqueId +
+            "&out_trade_no=" +
+            res.data.data.out_trade_no
+        );
 
-    //   // window.location.href = payRedirectUrl;
-    //   // console.log(payRedirectUrl);
-    // }
+      // 查询图片支付状态
+      // inquireImgPayStateFn(gifObj.value.uniqueId);
+
+      window.location.href = payRedirectUrl;
+      console.log(payRedirectUrl);
+    }
   });
 
   // return await h5PlaceOrder(obj).then((res) => {
-
   // });
 };
 </script>

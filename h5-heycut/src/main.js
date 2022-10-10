@@ -6,6 +6,7 @@ import "@/assets/styles/common.less";
 import vue3videoPlay from "vue3-video-play"; // 引入组件
 import "vue3-video-play/dist/style.css"; // 引入css
 import Vant from "vant";
+import { Lazyload } from "vant";
 // 2. 引入组件样式
 import "vant/lib/index.css";
 import store from "./store";
@@ -16,5 +17,8 @@ createApp(App)
   .use(vue3videoPlay)
   .use(store)
   .use(Vant)
+  .use(Lazyload, {
+    lazyComponent: true,
+  })
   .use(router)
   .mount("#app");

@@ -7,32 +7,37 @@
       <Nav></Nav>
       <!-- 标题 -->
       <Title>
-        <template v-slot:title-p> 视频转化GIF动图 </template>
+        <template v-slot:title-p> 我的制作GIF库</template>
       </Title>
 
       <!-- 记录 -->
       <ul>
-        <li>
-          <div class="video-img"><img src="" alt="" /></div>
-          <div class="download-btn">
-            <div><button>下载GIF</button></div>
-            <div class="div-style">&yen;1.00去水印</div>
-          </div>
-        </li>
-        <li>
-          <div class="video-img"><img src="" alt="" /></div>
-          <div class="download-btn">
-            <div><button>下载GIF</button></div>
-            <div class="div-style">&yen;1.00去水印</div>
-          </div>
-        </li>
-        <li>
-          <div class="video-img"><img src="" alt="" /></div>
-          <div class="download-btn">
-            <div><button>下载GIF</button></div>
-            <div class="div-style">&yen;1.00去水印</div>
-          </div>
-        </li>
+        <lazy-component>
+          <li v-for="item in gifList" :key="item.createAt" v-lazy="item.url">
+            <template v-if="item.url">
+              <div class="video-img">
+                <img
+                  :src="!item.payStatus === 0 ? item.url : item.urlWm"
+                  alt=""
+                />
+              </div>
+              <div class="download-btn">
+                <div><button>下载GIF</button></div>
+                <div
+                  :style="{ width: item.payStatus !== 0 ? '100%' : '1.49rem' }"
+                  class="div-style"
+                  @click="handlePay(item)"
+                >
+                  {{
+                    item.payStatus === 0
+                      ? "¥1.00去水印"
+                      : "立即下载无水印GIF（已支付）"
+                  }}
+                </div>
+              </div>
+            </template>
+          </li>
+        </lazy-component>
       </ul>
     </div>
   </div>
@@ -45,37 +50,42 @@ import Title from "@/components/Title/index.vue"; // 标题组件
 import { voluntarilyLogin, WeChatLogin, lookLoginInfo } from "@/api/login.js";
 import { onMounted, ref } from "vue";
 import { useStore } from "vuex";
+// 支付接口
+import { inquireImgHavePaidState } from "@/api/pay.js";
+
+// 支付 js pay 逻辑代码
+import { onBridgeReady } from "@/assets/js/pay.js";
+// 下载图片 js 逻辑代码
+import { downLoadimg } from "@/assets/js/downLoadImg.js";
 component: {
   Nav, Title;
 }
 const store = useStore();
 
+// 我的制作列表
+let gifList = ref([]);
+// 分页数据
+let pagingObj = ref({
+  pageNo: 1, // 当前显示多少页
+  pageSize: 10, // 每页显示多少行
+  total: 10, // 总数
+});
+
 onMounted(() => {
   // 查看是否登陆，没登陆就登陆
   lookLogin();
+
+  if (store.state.user.userObj.id.length !== 0) {
+    // 登录了就获取数据
+    payTrue();
+  }
 });
 
-// 自动登录
-const voluntarilyLoginHandle = async () => {
-  return await voluntarilyLogin().then((res) => {
-    if (res.data.code == 200) {
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
-};
-// 微信登录
-const WeChatLoginHandle = async () => {
-  return await WeChatLogin().then((res) => {
-    if (res.data.code == 200) {
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
-};
-
-// 判断是否登陆
+// 1.判断是否登陆
 const lookLogin = async () => {
-  let Id = store.state.user.userObj.id;
-  return await lookLoginInfo(Id).then((res) => {
+  let memberId = store.state.user.userObj.id;
+  let { pageNo, pageSize } = pagingObj.value;
+  return await lookLoginInfo(memberId, pageNo, pageSize).then((res) => {
     if (
       res.data.code == 200 &&
       Object.keys(store.state.user.userObj).length !== 0
@@ -112,11 +122,60 @@ const lookLogin = async () => {
     }
   });
 };
+// 2.1 自动登录
+const voluntarilyLoginHandle = async () => {
+  return await voluntarilyLogin().then((res) => {
+    if (res.data.code == 200) {
+      store.commit("user/setUserObj", res.data.data);
+    }
+  });
+};
+// 2.2 微信登录
+const WeChatLoginHandle = async () => {
+  return await WeChatLogin().then((res) => {
+    if (res.data.code == 200) {
+      store.commit("user/setUserObj", res.data.data);
+    }
+  });
+};
+
+// 3 查询 我的制作GIF库列表
+const payTrue = async () => {
+  let memberId = store.state.user.userObj.id;
+  return await inquireImgHavePaidState(memberId).then((res) => {
+    console.log(res);
+    if (res.data.code == 200) {
+      // 存储数组
+      gifList.value = res.data.data.list;
+      // 存储总数
+      pagingObj.value.total = res.data.data.total;
+
+      if (gifList.value.length > 0) {
+        document.querySelector(".record").style.height = "100%";
+      }
+      console.log(res.data.data);
+    }
+  });
+};
+
+// 4.点击支付
+const handlePay = (item) => {
+  console.log(item);
+  console.log(item.payStatus);
+  // 未支付
+  if (item.payStatus == 0) {
+    onBridgeReady(item.uniqueId);
+  } else if (item.payStatus == 1) {
+    // 已支付  下载图片
+    downLoadimg(item.urlWm);
+  }
+};
 </script>
 <style lang="less" scoped>
 .record {
   width: 100%;
   height: 8.97rem;
+  // height: 100%;
   background: linear-gradient(271deg, #e3e8f6, #e5f7f7);
   background-image: url("@/assets/img/bj/background.png");
   background-attachment: fixed;
@@ -125,6 +184,7 @@ const lookLogin = async () => {
   .container {
     margin: auto;
     width: 3.55rem;
+    // height: 8.97rem;
     // 标题修改样式
     .Title {
       margin-bottom: 0.36rem;
@@ -135,16 +195,18 @@ const lookLogin = async () => {
       li {
         margin-bottom: 0.15rem;
         width: 100%;
-        height: 2.4rem;
+        // height: 2.4rem;
         border-radius: 0.12rem;
         .video-img {
           width: 100%;
           height: 1.66rem;
           border-radius: 0.12rem 0.12rem 0 0;
-          overflow: hidden;
+          // overflow: hidden;
+          background: #fff;
           img {
+            float: left;
             width: 100%;
-            height: 100%;
+            // height: 100% !important;
           }
         }
         .download-btn {
@@ -178,7 +240,8 @@ const lookLogin = async () => {
             font-weight: 600;
             button {
               width: 97%;
-              height: 92%;
+              height: 91%;
+              line-height: 91%;
               position: absolute;
               border: none;
               background: #fff;

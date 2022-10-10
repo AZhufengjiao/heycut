@@ -3,6 +3,7 @@ import { requestWithoutToken } from "@/utils/request";
 /** 查询图片支付状态
  */
 export function inquireImgPayState(uniqueId) {
+  console.log(uniqueId);
   return requestWithoutToken(
     "/wap/app-api/tools/tool-make-status/checkStatus",
     "get",
@@ -12,11 +13,11 @@ export function inquireImgPayState(uniqueId) {
 
 /** 查询已支付制作图片列表
  */
-export function inquireImgHavePaidState(memberId) {
+export function inquireImgHavePaidState(memberId,pageNo,pageSize) {
   return requestWithoutToken(
     "/wap/app-api/tools/tool-make-status/getList",
     "get",
-    { memberId }
+    { memberId,pageNo,pageSize }
   );
 }
 
@@ -76,15 +77,10 @@ export function getNotJSAPIParams({ memberId, mId }) {
  * @returns
  */
 export function OrderStatusQuery({ memberId, out_trade_no }) {
-  // console.log(memberId, out_trade_no);
-  let formData = new FormData();
-  formData.append("memberId", memberId);
-  formData.append("out_trade_no", out_trade_no);
-  return requestWithoutToken(
-    "/wap/app-api/pay/wx/payStatusJS",
-    "post",
-    formData
-  );
+  return requestWithoutToken("/wap/app-api/pay/wx/payStatusJS", "post", {
+    memberId,
+    out_trade_no,
+  });
 }
 
 /** h5统一下单
