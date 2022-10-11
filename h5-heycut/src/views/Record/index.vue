@@ -13,16 +13,16 @@
       <!-- 记录 -->
       <ul>
         <lazy-component>
-          <li v-for="item in gifList" :key="item.createAt" v-lazy="item.url">
+          <li v-for="item in gifList" :key="item.createAt" v-lazy="item">
             <template v-if="item.url">
               <div class="video-img">
                 <img
-                  :src="!item.payStatus === 0 ? item.url : item.urlWm"
+                  :src="parseInt(item.payStatus) === 1 ? item.url : item.urlWm"
                   alt=""
                 />
               </div>
               <div class="download-btn">
-                <div><button>下载GIF</button></div>
+                <div v-if="item.payStatus == 0"><button>下载GIF</button></div>
                 <div
                   :style="{ width: item.payStatus !== 0 ? '100%' : '1.49rem' }"
                   class="div-style"
@@ -57,6 +57,9 @@ import { inquireImgHavePaidState } from "@/api/pay.js";
 import { onBridgeReady } from "@/assets/js/pay.js";
 // 下载图片 js 逻辑代码
 import { downLoadimg } from "@/assets/js/downLoadImg.js";
+// 登录 逻辑代码
+import { lookLogin } from "assets/js/login.js";
+import { Toast } from "vant";
 component: {
   Nav, Title;
 }
@@ -72,102 +75,71 @@ let pagingObj = ref({
 });
 
 onMounted(() => {
-  // 查看是否登陆，没登陆就登陆
+  console.log(window.location.pathname);
+  // 1. 查看是否登陆，没登陆就登陆
   lookLogin();
 
   if (store.state.user.userObj.id.length !== 0) {
-    // 登录了就获取数据
+    //  2.登录了就获取数据
     payTrue();
   }
 });
 
-// 1.判断是否登陆
-const lookLogin = async () => {
-  let memberId = store.state.user.userObj.id;
-  let { pageNo, pageSize } = pagingObj.value;
-  return await lookLoginInfo(memberId, pageNo, pageSize).then((res) => {
-    if (
-      res.data.code == 200 &&
-      Object.keys(store.state.user.userObj).length !== 0
-    ) {
-      console.log("已登陆");
-    } else {
-      res.data.code = 201;
-    }
-    if (res.data.code == 201) {
-      // console.log( 222,  Object.keys(store.state.user.userObj).length )
-      //是否是微信浏览器
-      if (/(micromessenger)/i.test(navigator.userAgent)) {
-        //是否电脑微信或者微信开发者工具
-        if (
-          /(WindowsWechat)/i.test(navigator.userAgent) ||
-          /(wechatdevtools)/i.test(navigator.userAgent)
-        ) {
-          console.log("电脑微信或者微信开发者工具");
-          // 存储用户登录方式
-          store.commit("user/setLoginState", "wechat-tool");
-        } else {
-          //手机微信打开的浏览器
-          console.log("手机微信");
-          WeChatLoginHandle();
-          // 存储用户登录方式
-          store.commit("user/setLoginState", "wechat");
-        }
-      } else {
-        console.log("其他浏览器");
-        voluntarilyLoginHandle();
-        // 存储用户登录方式
-        store.commit("user/setLoginState", "other");
-      }
-    }
-  });
-};
-// 2.1 自动登录
-const voluntarilyLoginHandle = async () => {
-  return await voluntarilyLogin().then((res) => {
-    if (res.data.code == 200) {
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
-};
-// 2.2 微信登录
-const WeChatLoginHandle = async () => {
-  return await WeChatLogin().then((res) => {
-    if (res.data.code == 200) {
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
-};
-
-// 3 查询 我的制作GIF库列表
+// 2 查询 我的制作GIF库列表
 const payTrue = async () => {
   let memberId = store.state.user.userObj.id;
-  return await inquireImgHavePaidState(memberId).then((res) => {
-    console.log(res);
-    if (res.data.code == 200) {
-      // 存储数组
-      gifList.value = res.data.data.list;
-      // 存储总数
-      pagingObj.value.total = res.data.data.total;
+  let { pageNo, pageSize } = pagingObj.value;
+  return await inquireImgHavePaidState(memberId, pageNo, pageSize).then(
+    (res) => {
+      // console.log(res);
+      if (res.data.code == 200) {
+        // 存储数组
+        res.data.data.list.map((item) => {
+          gifList.value.push(item);
+        });
+        // gifList.value = res.data.data.list;
+        // 存储总数
+        pagingObj.value.total = res.data.data.total;
 
-      if (gifList.value.length > 0) {
-        document.querySelector(".record").style.height = "100%";
+        if (gifList.value.length > 0) {
+          document.querySelector(".record").style.height = "100%";
+        }
+        console.log(res.data.data);
       }
-      console.log(res.data.data);
     }
-  });
+  );
 };
 
-// 4.点击支付
+// 3.点击支付
 const handlePay = (item) => {
   console.log(item);
   console.log(item.payStatus);
   // 未支付
   if (item.payStatus == 0) {
+    // 去筛选支付方式pay
     onBridgeReady(item.uniqueId);
   } else if (item.payStatus == 1) {
     // 已支付  下载图片
     downLoadimg(item.urlWm);
+  }
+};
+
+// 4.滚动条滚动触底时触发
+window.onscroll = function () {
+  var scrollTop = document.documentElement.scrollTop || document.body.scrollTop; //据顶部距离
+  var windowHeight =
+    document.documentElement.clientHeight || document.body.clientHeight; //可视高度
+  var scrollHeight =
+    document.documentElement.scrollHeight || document.body.scrollHeight; //滚动条总高度
+  if (scrollTop + windowHeight == scrollHeight) {
+    // 如果数据数组长度小于总长度就加载新数据
+    if (gifList.value.length < pagingObj.value.total) {
+      pagingObj.value.pageNo += 1;
+      // console.log(gifList.value.length);
+      payTrue();
+    } else {
+      Toast("已经到底啦");
+    }
   }
 };
 </script>

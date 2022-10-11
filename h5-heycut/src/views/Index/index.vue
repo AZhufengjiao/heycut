@@ -31,6 +31,9 @@ import ClickUpload from "@/components/ClickUpload/index.vue"; // 击上传虚线
 import MoreTools from "components/MoreTools/index.vue"; // 更多工具
 // 接口
 import { voluntarilyLogin, WeChatLogin, lookLoginInfo } from "@/api/login.js";
+
+// 登录 逻辑代码
+import { lookLogin } from "assets/js/login.js";
 import { onMounted, ref } from "vue";
 import { useStore } from "vuex";
 component: {
@@ -42,63 +45,7 @@ onMounted(() => {
   lookLogin();
 });
 
-// 自动登录
-const voluntarilyLoginHandle = async () => {
-  return await voluntarilyLogin().then((res) => {
-    if (res.data.code == 200) {
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
-};
-// 微信登录
-const WeChatLoginHandle = async () => {
-  return await WeChatLogin().then((res) => {
-    if (res.data.code == 200) {
-      store.commit("user/setUserObj", res.data.data);
-    }
-  });
-};
 
-// 判断是否登陆
-const lookLogin = async () => {
-  let Id = store.state.user.userObj.id;
-  return await lookLoginInfo(Id).then((res) => {
-    if (
-      res.data.code == 200 &&
-      Object.keys(store.state.user.userObj).length !== 0
-    ) {
-      console.log("已登陆");
-    } else {
-      res.data.code = 201;
-    }
-    if (res.data.code == 201) {
-      // console.log( 222,  Object.keys(store.state.user.userObj).length )
-      //是否是微信浏览器
-      if (/(micromessenger)/i.test(navigator.userAgent)) {
-        //是否电脑微信或者微信开发者工具
-        if (
-          /(WindowsWechat)/i.test(navigator.userAgent) ||
-          /(wechatdevtools)/i.test(navigator.userAgent)
-        ) {
-          console.log("电脑微信或者微信开发者工具");
-          // 存储用户登录方式
-          store.commit("user/setLoginState", "wechat-tool");
-        } else {
-          //手机微信打开的浏览器
-          console.log("手机微信");
-          WeChatLoginHandle();
-          // 存储用户登录方式
-          store.commit("user/setLoginState", "wechat");
-        }
-      } else {
-        console.log("其他浏览器");
-        voluntarilyLoginHandle();
-        // 存储用户登录方式
-        store.commit("user/setLoginState", "other");
-      }
-    }
-  });
-};
 </script>
 
 <style lang="less" scoped>

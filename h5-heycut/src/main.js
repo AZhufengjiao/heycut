@@ -7,8 +7,10 @@ import vue3videoPlay from "vue3-video-play"; // 引入组件
 import "vue3-video-play/dist/style.css"; // 引入css
 import Vant from "vant";
 import { Lazyload } from "vant";
+
 // 2. 引入组件样式
 import "vant/lib/index.css";
+import "vant/es/toast/style";
 import store from "./store";
 import interact from "interactjs";
 

@@ -47,7 +47,9 @@
     <div class="button-box">
       <div class="download-btn">
         <div v-if="!buttonState.flag">
-          <button @click="downloadImg">下载GIF</button>
+          <button @click="downloadImg" >
+            下载GIF
+          </button>
         </div>
         <div
           :style="{ width: buttonState.flag ? '100%' : '1.49rem' }"

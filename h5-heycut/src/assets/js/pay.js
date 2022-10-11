@@ -45,21 +45,22 @@ const wechatNotH5Pay = async (uniqueId) => {
   }).then((res) => {
     console.log(res);
     if (res.data.code == 200) {
-      console.log(11111, uniqueId);
-
+      // console.log(11111, uniqueId);
+      console.log(window.location);
       // 获取数据，跳转支付页面
       let payRedirectUrl =
         res.data.data.mwebUrl +
         "&redirect_url=" +
         encodeURIComponent(
           window.location.origin +
-            "/compress?uniqueId=" +
+            window.location.pathname +
+            "?uniqueId=" +
             uniqueId +
             "&out_trade_no=" +
             res.data.data.out_trade_no
         );
 
-      //   window.location.href = payRedirectUrl;
+      window.location.href = payRedirectUrl;
       console.log(payRedirectUrl);
     }
   });
